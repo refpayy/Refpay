@@ -6,9 +6,9 @@
 <title>RefPay — Global Earning Network</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js" crossorigin></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -44,10 +44,40 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--gold)!im
 .press:active{transform:scale(.95)!important;filter:brightness(1.2)}
 .card-hover{transition:all .3s cubic-bezier(.34,1.56,.64,1)}
 .card-hover:hover{transform:translateY(-3px);box-shadow:0 8px 32px var(--gold-glow)}
+
+#loading-screen{position:fixed;inset:0;background:#04030a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;transition:opacity .5s ease}
+#loading-screen.hidden{opacity:0;pointer-events:none}
+.loading-logo{font-size:52px;font-family:'Cinzel',serif;font-weight:900;background:linear-gradient(135deg,#f5d380,#c9a84c,#8b6914);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:6px;margin-bottom:8px}
+.loading-sub{font-size:10px;color:#3a3020;letter-spacing:5px;text-transform:uppercase;font-family:'Orbitron',monospace;margin-bottom:32px}
+.loading-bar{width:180px;height:2px;background:#1e1a30;border-radius:1px;overflow:hidden}
+.loading-bar-inner{height:100%;background:linear-gradient(90deg,transparent,#c9a84c,#f5d380,#c9a84c,transparent);background-size:300%;animation:shimmer 1.5s ease-in-out infinite;border-radius:1px}
 </style>
 </head>
 <body>
+
+<!-- Loading screen — shows while React + Babel loads -->
+<div id="loading-screen">
+  <div class="loading-logo">RefPay</div>
+  <div class="loading-sub">Global Earning Network</div>
+  <div class="loading-bar"><div class="loading-bar-inner"></div></div>
+</div>
+
 <div id="root"></div>
+
+<script>
+// Hide loading screen once app renders
+window.__hideLoading = function(){
+  var el = document.getElementById('loading-screen');
+  if(el){ el.classList.add('hidden'); setTimeout(function(){ el.style.display='none'; }, 600); }
+};
+// Fallback: if something goes wrong show error
+window.onerror = function(msg, src, line){
+  var el = document.getElementById('loading-screen');
+  if(el) el.innerHTML = '<div style="color:#c0392b;padding:28px;text-align:center;font-family:monospace;font-size:13px;max-width:340px"><div style="font-size:32px;margin-bottom:12px">⚠️</div><div style="color:#f5d380;font-weight:700;margin-bottom:8px">App Error</div><div style="color:#7a6830;word-break:break-all">'+msg+'</div></div>';
+  return false;
+};
+</script>
+
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback } = React;
 
@@ -392,7 +422,7 @@ function Splash({onDone}){
 // ═══════════════════════════════
 function AdsScreen({userId,onBack,toast,refresh}){
   const user=DB.users[userId];
-  const [phase,setPhase]=useState("list"); // list | watching | done
+  const [phase,setPhase]=useState("list");
   const [currentAd,setCurrentAd]=useState(null);
   const [timer,setTimer]=useState(15);
   const [watchedToday,setWatchedToday]=useState(
@@ -719,7 +749,7 @@ function Deposit({userId,onBack,onDone,toast}){
                   {selPay.bank&&<div style={{fontSize:10,color:"#4a4230"}}>{selPay.bank}</div>}
                 </div>
               </div>
-              <div style={{fontWeight:900,fontSize:16,color:"#f5d380",fontFamily:"'Orbitron',monospace",letterSpacing:1}}>{selPay.num}</div>
+                            <div style={{fontWeight:900,fontSize:16,color:"#f5d380",fontFamily:"'Orbitron',monospace",letterSpacing:1}}>{selPay.num}</div>
               <div style={{fontSize:11,color:"#7a6830",marginTop:2}}>{selPay.title}</div>
             </div>
           )}
@@ -770,7 +800,7 @@ function Withdraw({userId,onBack,toast,refresh}){
           <button onClick={onBack} style={{background:"#0d0b1a",border:"1px solid #1e1a30",color:"#4a4230",borderRadius:10,padding:"9px 14px",cursor:"pointer",fontSize:17}}>←</button>
           <div style={{fontSize:20,fontWeight:900,color:"#f5d380",fontFamily:"'Cinzel',serif"}}>Withdraw Earnings</div>
         </div>
-        <div style={{background:"linear-gradient(135deg,#0a0800,#1a1200)",border:"1px solid #c9a84c33",borderRadius:20,padding:22,marginBottom:14,textAlign:"center",animation:"glow 4s ease-in-out infinite"}}>
+        <div style={{background:"linear-gradient(135deg,#0a0800,#1a1200)",border:"1px solid #c9a84c33",borderRadius:20,padding:"22px 18px",marginBottom:14,textAlign:"center",animation:"glow 4s ease-in-out infinite"}}>
           <div style={{fontSize:10,fontWeight:700,color:"#3a3020",letterSpacing:3,textTransform:"uppercase",marginBottom:8,fontFamily:"'Orbitron',monospace"}}>Available Balance</div>
           <div style={{fontSize:38,fontWeight:900,color:"#f5d380",letterSpacing:-1,lineHeight:1,fontFamily:"'Orbitron',monospace"}}>PKR {user.balance.toLocaleString()}</div>
           <div style={{fontSize:11,color:"#4a4230",marginTop:4}}>≈ ${toUSD(user.balance)} USD</div>
@@ -994,7 +1024,6 @@ function AdminPanel({onLogout,toast}){
   const refresh=()=>setTick(t=>t+1);
   const s=DB.settings;
 
-  // Settings state
   const [ep,setEp]=useState(s.adminEasypaisa);
   const [jc,setJc]=useState(s.adminJazzcash);
   const [bankNum,setBankNum]=useState(s.adminBank.account);
@@ -1004,7 +1033,6 @@ function AdminPanel({onLogout,toast}){
   const [binName,setBinName]=useState(s.adminBinance.name);
   const [adsEnabled,setAdsEnabled]=useState(s.adsEnabled);
   const [adsPerSession,setAdsPerSession]=useState(String(s.adsPerSession));
-
   const [nt,setNt]=useState({title:"",desc:"",cat:"Video Editing",commission:"",deadline:"",req:""});
   const snt=k=>v=>setNt(p=>({...p,[k]:v}));
 
@@ -1017,14 +1045,11 @@ function AdminPanel({onLogout,toast}){
   const totalRef=aDeps.reduce((ss,t)=>ss+t.referrerShare,0);
 
   const saveSettings=()=>{
-    DB.settings.adminEasypaisa=ep;
-    DB.settings.adminJazzcash=jc;
+    DB.settings.adminEasypaisa=ep;DB.settings.adminJazzcash=jc;
     DB.settings.adminBank={name:bankName,account:bankNum,title:bankTitle};
     DB.settings.adminBinance={uid:binUid,name:binName};
-    DB.settings.adsEnabled=adsEnabled;
-    DB.settings.adsPerSession=parseInt(adsPerSession)||10;
-    toast("All settings saved!","success");
-    refresh();
+    DB.settings.adsEnabled=adsEnabled;DB.settings.adsPerSession=parseInt(adsPerSession)||10;
+    toast("All settings saved!","success");refresh();
   };
 
   const appD=id=>{const t=DB.transactions.find(x=>x.id===id);if(!t)return;t.status="approved";if(DB.users[t.userId]){DB.users[t.userId].depositDone=true;DB.users[t.userId].canRefer=true;}if(t.referrerId&&DB.users[t.referrerId]){DB.users[t.referrerId].balance+=t.referrerShare;DB.users[t.referrerId].totalEarned+=t.referrerShare;}DB.users.ADMIN.balance+=t.adminShare;DB.users.ADMIN.totalEarned+=t.adminShare;playCoin();toast(`Approved! Earned PKR ${t.adminShare.toLocaleString()}`,"success");refresh();};
@@ -1080,189 +1105,13 @@ function AdminPanel({onLogout,toast}){
           ))}
         </div>
 
-        {/* DEPOSITS TAB */}
-        {tab==="deposits"&&(
-          <div>{pDeps.length===0?<div style={{textAlign:"center",color:"#3a3020",padding:40,fontSize:12,fontFamily:"'Orbitron',monospace"}}>NO PENDING DEPOSITS ✦</div>:
-          pDeps.map(t=>{const p=getPlan(t.amount);return(
-            <Card key={t.id} glow color={p.color} s={{marginBottom:10}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:9}}>
-                <div><div style={{fontWeight:800,color:"#f5d380",fontSize:13}}>{t.userName}</div><div style={{fontSize:9,color:"#3a3020",fontFamily:"'Orbitron',monospace"}}>{t.userPhone} · {t.date}</div></div>
-                <Badge l="Pending" c="#c9a84c"/>
-              </div>
-              <div style={{background:"#080712",borderRadius:10,padding:10,marginBottom:9}}>
-                <div style={{fontSize:20,fontWeight:900,color:p.color,fontFamily:"'Orbitron',monospace",marginBottom:4}}>{p.icon} PKR {t.amount.toLocaleString()}</div>
-                <div style={{fontSize:10,color:"#3a3020"}}>{t.method.toUpperCase()} · TXN: {t.txnId}</div>
-              </div>
-              <div style={{display:"flex",gap:7}}>
-                <Btn ch="✦ Approve" v="gold" onClick={()=>appD(t.id)} s={{padding:"10px 0",fontSize:12}}/>
-                <Btn ch="✕ Reject" v="red" onClick={()=>rejD(t.id)} s={{padding:"10px 0",fontSize:12}}/>
-              </div>
-            </Card>
-          );})}
-        )}
-
-        {/* WITHDRAWALS TAB */}
-        {tab==="withdrawals"&&(
-          <div>{pW.length===0?<div style={{textAlign:"center",color:"#3a3020",padding:40,fontSize:12,fontFamily:"'Orbitron',monospace"}}>NO PENDING WITHDRAWALS</div>:
-          pW.map(w=>(
-            <Card key={w.id} glow color="#7dd3fc" s={{marginBottom:10}}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:9}}>
-                <div><div style={{fontWeight:800,color:"#f5d380",fontSize:13}}>{w.userName}</div><div style={{fontSize:9,color:"#3a3020",fontFamily:"'Orbitron',monospace"}}>{w.date}</div></div>
-                <Badge l="Pending" c="#c9a84c"/>
-              </div>
-              <div style={{background:"#080712",borderRadius:11,padding:12,marginBottom:9}}>
-                <div style={{fontSize:24,fontWeight:900,color:"#f5d380",marginBottom:6,fontFamily:"'Orbitron',monospace"}}>PKR {w.youGet.toLocaleString()}</div>
-                <div style={{fontSize:12,color:"#4a4230"}}>{w.method.toUpperCase()}: <b style={{color:"#e8dfc0"}}>{w.accNumber}</b></div>
-                <div style={{fontSize:11,color:"#3a3020",marginTop:2}}>{w.accName}</div>
-              </div>
-              <div style={{display:"flex",gap:7}}>
-                <Btn ch="✦ Mark Sent" v="gold" onClick={()=>appW(w.id)} s={{padding:"10px 0",fontSize:12}}/>
-                <Btn ch="✕ Reject" v="red" onClick={()=>rejW(w.id)} s={{padding:"10px 0",fontSize:12}}/>
-              </div>
-            </Card>
-          ))}
-        )}
-
-        {/* TASK SUBMISSIONS */}
-        {tab==="tasks"&&(
-          <div>{pSubs.length===0?<div style={{textAlign:"center",color:"#3a3020",padding:36,fontSize:12,fontFamily:"'Orbitron',monospace"}}>NO PENDING SUBMISSIONS</div>:
-          pSubs.map(ss=>(
-            <Card key={ss.id} glow color="#a78bfa" s={{marginBottom:10}}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:9}}>
-                <div><div style={{fontWeight:800,color:"#f5d380",fontSize:13}}>{ss.userName}</div><div style={{fontSize:9,color:"#3a3020",fontFamily:"'Orbitron',monospace"}}>{ss.date}</div></div>
-                <Badge l="Review" c="#c9a84c"/>
-              </div>
-              <div style={{background:"#080712",borderRadius:11,padding:11,marginBottom:9}}>
-                <div style={{fontSize:11,fontWeight:800,color:"#a78bfa",marginBottom:4}}>🎯 {ss.taskTitle}</div>
-                <div style={{fontSize:11,color:"#4a4230",wordBreak:"break-all"}}>{ss.submission}</div>
-                <div style={{fontSize:18,fontWeight:900,color:"#c9a84c",marginTop:7,fontFamily:"'Orbitron',monospace"}}>PKR {ss.taskCommission.toLocaleString()}</div>
-              </div>
-              <div style={{display:"flex",gap:7}}>
-                <Btn ch="✦ Approve" v="gold" onClick={()=>appS(ss.id)} s={{padding:"10px 0",fontSize:12}}/>
-                <Btn ch="✕ Reject" v="red" onClick={()=>rejS(ss.id)} s={{padding:"10px 0",fontSize:12}}/>
-              </div>
-            </Card>
-          ))}
-        )}
-
-        {/* NEW TASK */}
-        {tab==="newtask"&&(
-          <Card glow color="#27ae60">
-            <div style={{fontSize:16,fontWeight:900,color:"#f5d380",marginBottom:16,fontFamily:"'Cinzel',serif"}}>Post New Task</div>
-            <Inp label="Task Title" value={nt.title} onChange={snt("title")} placeholder="e.g. Create a Travel Vlog Video" required/>
-            <Inp label="Description" value={nt.desc} onChange={snt("desc")} placeholder="Detailed task requirements..." rows={3}/>
-            <Inp label="Commission (PKR)" value={nt.commission} onChange={snt("commission")} placeholder="e.g. 500" type="number" required/>
-            <Inp label="Deadline" value={nt.deadline} onChange={snt("deadline")} placeholder="e.g. 3 days / Open"/>
-            <Btn ch="🎯 Post Task" v="gold" onClick={addTask} disabled={!nt.title||!nt.commission}/>
-            {DB.tasks.length>0&&(
-              <div style={{marginTop:20}}>
-                <div style={{fontSize:10,fontWeight:700,color:"#4a4230",letterSpacing:2,marginBottom:10,fontFamily:"'Orbitron',monospace"}}>ACTIVE TASKS</div>
-                {DB.tasks.filter(t=>t.status==="active").map(task=>(
-                  <div key={task.id} style={{background:"#080712",border:"1px solid #1e1a30",borderRadius:12,padding:12,marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <div>
-                      <div style={{fontWeight:800,color:"#c9a84c",fontSize:12}}>{task.title}</div>
-                      <div style={{fontSize:10,color:"#3a3020",fontFamily:"'Orbitron',monospace"}}>PKR {task.commission.toLocaleString()}</div>
-                    </div>
-                    <button onClick={()=>{playCoin();deleteTask(task.id);}} style={{background:"#2a0a0a",border:"1px solid #7f1d1d33",color:"#e74c3c",borderRadius:8,padding:"6px 10px",cursor:"pointer",fontSize:10,fontWeight:700,fontFamily:"'Rajdhani',sans-serif"}}>Delete</button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-        )}
-
-        {/* MEMBERS */}
-        {tab==="members"&&(
-          <div>{users.length===0?<div style={{textAlign:"center",color:"#3a3020",padding:36,fontSize:12,fontFamily:"'Orbitron',monospace"}}>NO MEMBERS YET</div>:
-          users.map(u=>{
-            const dep=DB.transactions.find(t=>t.userId===u.id&&t.status==="approved");
-            const p=dep?getPlan(dep.amount):null;
-            return(
-              <div key={u.id} style={{background:"#0d0b1a",border:"1px solid #1e1a30",borderRadius:14,padding:13,marginBottom:8}}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
-                  <div style={{fontWeight:800,color:"#f5d380",fontSize:13}}>{u.name}</div>
-                  <Badge l={u.depositDone?"Active":"Inactive"} c={u.depositDone?"#27ae60":"#e74c3c"}/>
-                </div>
-                <div style={{fontSize:10,color:"#3a3020",marginBottom:7,fontFamily:"'Orbitron',monospace"}}>{u.phone} · {u.joinDate}</div>
-                <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-                  {p&&<Badge l={`${p.icon} ${p.label}`} c={p.color}/>}
-                  <Badge l={`Code: ${u.referralCode}`} c="#c9a84c"/>
-                  <Badge l={`₨${u.balance.toLocaleString()}`} c={u.balance>0?"#c9a84c":"#3a3020"}/>
-                </div>
-              </div>
-            );
-          })}
-        )}
-
-        {/* SETTINGS */}
-        {tab==="settings"&&(
-          <div>
-            <Card glow color="#f0b90b" s={{marginBottom:12}}>
-              <div style={{fontSize:15,fontWeight:900,color:"#f5d380",marginBottom:16,fontFamily:"'Cinzel',serif"}}>⚙️ Payment Settings</div>
-              <div style={{marginBottom:16,padding:14,background:"#080712",borderRadius:12,border:"1px solid #27ae6022"}}>
-                <div style={{fontSize:10,fontWeight:700,color:"#27ae60",letterSpacing:2,marginBottom:10,fontFamily:"'Orbitron',monospace"}}>💚 EASYPAISA</div>
-                <Inp label="EasyPaisa Number" value={ep} onChange={setEp} placeholder="03XXXXXXXXX" type="tel"/>
-              </div>
-              <div style={{marginBottom:16,padding:14,background:"#080712",borderRadius:12,border:"1px solid #e91e8c22"}}>
-                <div style={{fontSize:10,fontWeight:700,color:"#e91e8c",letterSpacing:2,marginBottom:10,fontFamily:"'Orbitron',monospace"}}>🔴 JAZZCASH</div>
-                <Inp label="JazzCash Number" value={jc} onChange={setJc} placeholder="03XXXXXXXXX" type="tel"/>
-              </div>
-              <div style={{marginBottom:16,padding:14,background:"#080712",borderRadius:12,border:"1px solid #2980b922"}}>
-                <div style={{fontSize:10,fontWeight:700,color:"#2980b9",letterSpacing:2,marginBottom:10,fontFamily:"'Orbitron',monospace"}}>🏦 BANK ACCOUNT</div>
-                <Inp label="Bank Name" value={bankName} onChange={setBankName} placeholder="e.g. Meezan Bank"/>
-                <Inp label="Account Number" value={bankNum} onChange={setBankNum} placeholder="XXXXXXXXXXXXXXXX"/>
-                <Inp label="Account Title" value={bankTitle} onChange={setBankTitle} placeholder="e.g. RefPay Admin"/>
-              </div>
-              <div style={{marginBottom:16,padding:14,background:"#080712",borderRadius:12,border:"1px solid #f0b90b22"}}>
-                <div style={{fontSize:10,fontWeight:700,color:"#f0b90b",letterSpacing:2,marginBottom:10,fontFamily:"'Orbitron',monospace"}}>🟡 BINANCE</div>
-                <Inp label="Binance UID" value={binUid} onChange={setBinUid} placeholder="Your Binance UID"/>
-                <Inp label="Account Name" value={binName} onChange={setBinName} placeholder="Name on Binance"/>
-              </div>
-              <Btn ch="💾 Save All Settings" v="gold" onClick={saveSettings}/>
-            </Card>
-          </div>
-        )}
-
-        {/* ADS MANAGEMENT */}
-        {tab==="ads"&&(
-          <Card glow color="#e91e8c">
-            <div style={{fontSize:15,fontWeight:900,color:"#f5d380",marginBottom:16,fontFamily:"'Cinzel',serif"}}>📺 Ads Management</div>
-            <div style={{background:"#080712",border:"1px solid #c9a84c18",borderRadius:12,padding:14,marginBottom:14}}>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                {[{l:"Total Ad Views",v:DB.adViews.length,c:"#c9a84c"},{l:"Total Paid (Ads)",v:`₨${DB.adViews.reduce((s,v)=>s+v.earn,0)}`,c:"#f5d380"}].map(ss=>(
-                  <div key={ss.l} style={{textAlign:"center",padding:10,background:"#0d0b1a",borderRadius:10,border:"1px solid #1e1a30"}}>
-                    <div style={{fontSize:18,fontWeight:900,color:ss.c,fontFamily:"'Orbitron',monospace"}}>{ss.v}</div>
-                    <div style={{fontSize:8,color:"#3a3020",marginTop:2,fontFamily:"'Orbitron',monospace"}}>{ss.l.toUpperCase()}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",background:"#080712",borderRadius:12,marginBottom:10,border:"1px solid #1e1a30"}}>
-              <div>
-                <div style={{fontWeight:800,color:"#f5d380",fontSize:13}}>Ads Enabled</div>
-                <div style={{fontSize:10,color:"#3a3020"}}>Allow users to watch ads</div>
-              </div>
-              <div onClick={()=>{playCoin();setAdsEnabled(a=>!a);}} style={{width:44,height:24,borderRadius:12,background:adsEnabled?"linear-gradient(135deg,#27ae60,#2ecc71)":"#1e1a30",cursor:"pointer",position:"relative",transition:"all .3s",border:`1px solid ${adsEnabled?"#27ae6055":"#2a2a4a"}`}}>
-                <div style={{position:"absolute",top:3,left:adsEnabled?22:3,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"all .3s"}}/>
-              </div>
-            </div>
-            <Inp label="Ads Per Session (default 10)" value={adsPerSession} onChange={setAdsPerSession} type="number" placeholder="10"/>
-            <Btn ch="💾 Save Ads Settings" v="gold" onClick={saveSettings}/>
-            <div style={{marginTop:14}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#4a4230",letterSpacing:2,marginBottom:10,fontFamily:"'Orbitron',monospace"}}>DEMO ADS ({DEMO_ADS.length})</div>
-              {DEMO_ADS.map(ad=>(
-                <div key={ad.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:"#080712",border:`1px solid ${ad.color}18`,borderRadius:11,marginBottom:7}}>
-                  <span style={{fontSize:20}}>{ad.logo}</span>
-                  <div style={{flex:1}}>
-                    <div style={{fontWeight:800,color:ad.color,fontSize:11}}>{ad.brand}</div>
-                    <div style={{fontSize:9,color:"#3a3020",fontFamily:"'Orbitron',monospace"}}>PKR 5/view</div>
-                  </div>
-                  <Badge l="Active" c="#27ae60"/>
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
+        {tab==="deposits"&&(<div>{pDeps.length===0?<div style={{textAlign:"center",color:"#3a3020",padding:40,fontSize:12,fontFamily:"'Orbitron',monospace"}}>NO PENDING DEPOSITS ✦</div>:pDeps.map(t=>{const p=getPlan(t.amount);return(<Card key={t.id} glow color={p.color} s={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:9}}><div><div style={{fontWeight:800,color:"#f5d380",fontSize:13}}>{t.userName}</div><div style={{fontSize:9,color:"#3a3020",fontFamily:"'Orbitron',monospace"}}>{t.userPhone} · {t.date}</div></div><Badge l="Pending" c="#c9a84c"/></div><div style={{background:"#080712",borderRadius:10,padding:10,marginBottom:9}}><div style={{fontSize:20,fontWeight:900,color:p.color,fontFamily:"'Orbitron',monospace",marginBottom:4}}>{p.icon} PKR {t.amount.toLocaleString()}</div><div style={{fontSize:10,color:"#3a3020"}}>{t.method.toUpperCase()} · TXN: {t.txnId}</div></div><div style={{display:"flex",gap:7}}><Btn ch="✦ Approve" v="gold" onClick={()=>appD(t.id)} s={{padding:"10px 0",fontSize:12}}/><Btn ch="✕ Reject" v="red" onClick={()=>rejD(t.id)} s={{padding:"10px 0",fontSize:12}}/></div></Card>);})}</div>)}
+        {tab==="withdrawals"&&(<div>{pW.length===0?<div style={{textAlign:"center",color:"#3a3020",padding:40,fontSize:12,fontFamily:"'Orbitron',monospace"}}>NO PENDING WITHDRAWALS</div>:pW.map(w=>(<Card key={w.id} glow color="#7dd3fc" s={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:9}}><div><div style={{fontWeight:800,color:"#f5d380",fontSize:13}}>{w.userName}</div><div style={{fontSize:9,color:"#3a3020",fontFamily:"'Orbitron',monospace"}}>{w.date}</div></div><Badge l="Pending" c="#c9a84c"/></div><div style={{background:"#080712",borderRadius:11,padding:12,marginBottom:9}}><div style={{fontSize:24,fontWeight:900,color:"#f5d380",marginBottom:6,fontFamily:"'Orbitron',monospace"}}>PKR {w.youGet.toLocaleString()}</div><div style={{fontSize:12,color:"#4a4230"}}>{w.method.toUpperCase()}: <b style={{color:"#e8dfc0"}}>{w.accNumber}</b></div><div style={{fontSize:11,color:"#3a3020",marginTop:2}}>{w.accName}</div></div><div style={{display:"flex",gap:7}}><Btn ch="✦ Mark Sent" v="gold" onClick={()=>appW(w.id)} s={{padding:"10px 0",fontSize:12}}/><Btn ch="✕ Reject" v="red" onClick={()=>rejW(w.id)} s={{padding:"10px 0",fontSize:12}}/></div></Card>))}</div>)}
+        {tab==="tasks"&&(<div>{pSubs.length===0?<div style={{textAlign:"center",color:"#3a3020",padding:36,fontSize:12,fontFamily:"'Orbitron',monospace"}}>NO PENDING SUBMISSIONS</div>:pSubs.map(ss=>(<Card key={ss.id} glow color="#a78bfa" s={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:9}}><div><div style={{fontWeight:800,color:"#f5d380",fontSize:13}}>{ss.userName}</div><div style={{fontSize:9,color:"#3a3020",fontFamily:"'Orbitron',monospace"}}>{ss.date}</div></div><Badge l="Review" c="#c9a84c"/></div><div style={{background:"#080712",borderRadius:11,padding:11,marginBottom:9}}><div style={{fontSize:11,fontWeight:800,color:"#a78bfa",marginBottom:4}}>🎯 {ss.taskTitle}</div><div style={{fontSize:11,color:"#4a4230",wordBreak:"break-all"}}>{ss.submission}</div><div style={{fontSize:18,fontWeight:900,color:"#c9a84c",marginTop:7,fontFamily:"'Orbitron',monospace"}}>PKR {ss.taskCommission.toLocaleString()}</div></div><div style={{display:"flex",gap:7}}><Btn ch="✦ Approve" v="gold" onClick={()=>appS(ss.id)} s={{padding:"10px 0",fontSize:12}}/><Btn ch="✕ Reject" v="red" onClick={()=>rejS(ss.id)} s={{padding:"10px 0",fontSize:12}}/></div></Card>))}</div>)}
+        {tab==="newtask"&&(<Card glow color="#27ae60"><div style={{fontSize:16,fontWeight:900,color:"#f5d380",marginBottom:16,fontFamily:"'Cinzel',serif"}}>Post New Task</div><Inp label="Task Title" value={nt.title} onChange={snt("title")} placeholder="e.g. Create a Travel Vlog Video" required/><Inp label="Description" value={nt.desc} onChange={snt("desc")} placeholder="Detailed task requirements..." rows={3}/><Inp label="Commission (PKR)" value={nt.commission} onChange={snt("commission")} placeholder="e.g. 500" type="number" required/><Inp label="Deadline" value={nt.deadline} onChange={snt("deadline")} placeholder="e.g. 3 days / Open"/><Btn ch="🎯 Post Task" v="gold" onClick={addTask} disabled={!nt.title||!nt.commission}/>{DB.tasks.length>0&&(<div style={{marginTop:20}}><div style={{fontSize:10,fontWeight:700,color:"#4a4230",letterSpacing:2,marginBottom:10,fontFamily:"'Orbitron',monospace"}}>ACTIVE TASKS</div>{DB.tasks.filter(t=>t.status==="active").map(task=>(<div key={task.id} style={{background:"#080712",border:"1px solid #1e1a30",borderRadius:12,padding:12,marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontWeight:800,color:"#c9a84c",fontSize:12}}>{task.title}</div><div style={{fontSize:10,color:"#3a3020",fontFamily:"'Orbitron',monospace"}}>PKR {task.commission.toLocaleString()}</div></div><button onClick={()=>{playCoin();deleteTask(task.id);}} style={{background:"#2a0a0a",border:"1px solid #7f1d1d33",color:"#e74c3c",borderRadius:8,padding:"6px 10px",cursor:"pointer",fontSize:10,fontWeight:700,fontFamily:"'Rajdhani',sans-serif"}}>Delete</button></div>))}</div>)}</Card>)}
+        {tab==="members"&&(<div>{users.length===0?<div style={{textAlign:"center",color:"#3a3020",padding:36,fontSize:12,fontFamily:"'Orbitron',monospace"}}>NO MEMBERS YET</div>:users.map(u=>{const dep=DB.transactions.find(t=>t.userId===u.id&&t.status==="approved");const p=dep?getPlan(dep.amount):null;return(<div key={u.id} style={{background:"#0d0b1a",border:"1px solid #1e1a30",borderRadius:14,padding:13,marginBottom:8}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><div style={{fontWeight:800,color:"#f5d380",fontSize:13}}>{u.name}</div><Badge l={u.depositDone?"Active":"Inactive"} c={u.depositDone?"#27ae60":"#e74c3c"}/></div><div style={{fontSize:10,color:"#3a3020",marginBottom:7,fontFamily:"'Orbitron',monospace"}}>{u.phone} · {u.joinDate}</div><div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{p&&<Badge l={`${p.icon} ${p.label}`} c={p.color}/>}<Badge l={`Code: ${u.referralCode}`} c="#c9a84c"/><Badge l={`₨${u.balance.toLocaleString()}`} c={u.balance>0?"#c9a84c":"#3a3020"}/></div></div>);})}</div>)}
+        {tab==="settings"&&(<div><Card glow color="#f0b90b" s={{marginBottom:12}}><div style={{fontSize:15,fontWeight:900,color:"#f5d380",marginBottom:16,fontFamily:"'Cinzel',serif"}}>⚙️ Payment Settings</div><div style={{marginBottom:16,padding:14,background:"#080712",borderRadius:12,border:"1px solid #27ae6022"}}><div style={{fontSize:10,fontWeight:700,color:"#27ae60",letterSpacing:2,marginBottom:10,fontFamily:"'Orbitron',monospace"}}>💚 EASYPAISA</div><Inp label="EasyPaisa Number" value={ep} onChange={setEp} placeholder="03XXXXXXXXX" type="tel"/></div><div style={{marginBottom:16,padding:14,background:"#080712",borderRadius:12,border:"1px solid #e91e8c22"}}><div style={{fontSize:10,fontWeight:700,color:"#e91e8c",letterSpacing:2,marginBottom:10,fontFamily:"'Orbitron',monospace"}}>🔴 JAZZCASH</div><Inp label="JazzCash Number" value={jc} onChange={setJc} placeholder="03XXXXXXXXX" type="tel"/></div><div style={{marginBottom:16,padding:14,background:"#080712",borderRadius:12,border:"1px solid #2980b922"}}><div style={{fontSize:10,fontWeight:700,color:"#2980b9",letterSpacing:2,marginBottom:10,fontFamily:"'Orbitron',monospace"}}>🏦 BANK ACCOUNT</div><Inp label="Bank Name" value={bankName} onChange={setBankName} placeholder="e.g. Meezan Bank"/><Inp label="Account Number" value={bankNum} onChange={setBankNum} placeholder="XXXXXXXXXXXXXXXX"/><Inp label="Account Title" value={bankTitle} onChange={setBankTitle} placeholder="e.g. RefPay Admin"/></div><div style={{marginBottom:16,padding:14,background:"#080712",borderRadius:12,border:"1px solid #f0b90b22"}}><div style={{fontSize:10,fontWeight:700,color:"#f0b90b",letterSpacing:2,marginBottom:10,fontFamily:"'Orbitron',monospace"}}>🟡 BINANCE</div><Inp label="Binance UID" value={binUid} onChange={setBinUid} placeholder="Your Binance UID"/><Inp label="Account Name" value={binName} onChange={setBinName} placeholder="Name on Binance"/></div><Btn ch="💾 Save All Settings" v="gold" onClick={saveSettings}/></Card></div>)}
+        {tab==="ads"&&(<Card glow color="#e91e8c"><div style={{fontSize:15,fontWeight:900,color:"#f5d380",marginBottom:16,fontFamily:"'Cinzel',serif"}}>📺 Ads Management</div><div style={{background:"#080712",border:"1px solid #c9a84c18",borderRadius:12,padding:14,marginBottom:14}}><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>{[{l:"Total Ad Views",v:DB.adViews.length,c:"#c9a84c"},{l:"Total Paid (Ads)",v:`₨${DB.adViews.reduce((s,v)=>s+v.earn,0)}`,c:"#f5d380"}].map(ss=>(<div key={ss.l} style={{textAlign:"center",padding:10,background:"#0d0b1a",borderRadius:10,border:"1px solid #1e1a30"}}><div style={{fontSize:18,fontWeight:900,color:ss.c,fontFamily:"'Orbitron',monospace"}}>{ss.v}</div><div style={{fontSize:8,color:"#3a3020",marginTop:2,fontFamily:"'Orbitron',monospace"}}>{ss.l.toUpperCase()}</div></div>))}</div></div><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",background:"#080712",borderRadius:12,marginBottom:10,border:"1px solid #1e1a30"}}><div><div style={{fontWeight:800,color:"#f5d380",fontSize:13}}>Ads Enabled</div><div style={{fontSize:10,color:"#3a3020"}}>Allow users to watch ads</div></div><div onClick={()=>{playCoin();setAdsEnabled(a=>!a);}} style={{width:44,height:24,borderRadius:12,background:adsEnabled?"linear-gradient(135deg,#27ae60,#2ecc71)":"#1e1a30",cursor:"pointer",position:"relative",transition:"all .3s",border:`1px solid ${adsEnabled?"#27ae6055":"#2a2a4a"}`}}><div style={{position:"absolute",top:3,left:adsEnabled?22:3,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"all .3s"}}/></div></div><Inp label="Ads Per Session" value={adsPerSession} onChange={setAdsPerSession} type="number" placeholder="10"/><Btn ch="💾 Save Ads Settings" v="gold" onClick={saveSettings}/><div style={{marginTop:14}}><div style={{fontSize:10,fontWeight:700,color:"#4a4230",letterSpacing:2,marginBottom:10,fontFamily:"'Orbitron',monospace"}}>DEMO ADS ({DEMO_ADS.length})</div>{DEMO_ADS.map(ad=>(<div key={ad.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:"#080712",border:`1px solid ${ad.color}18`,borderRadius:11,marginBottom:7}}><span style={{fontSize:20}}>{ad.logo}</span><div style={{flex:1}}><div style={{fontWeight:800,color:ad.color,fontSize:11}}>{ad.brand}</div><div style={{fontSize:9,color:"#3a3020",fontFamily:"'Orbitron',monospace"}}>PKR 5/view</div></div><Badge l="Active" c="#27ae60"/></div>))}</div></Card>)}
       </div>
     </div>
   );
@@ -1278,6 +1127,9 @@ function App(){
   const [tick,setTick]=useState(0);
   const showToast=(msg,type="info")=>setToastData({msg,type});
   const refresh=()=>setTick(t=>t+1);
+
+  // Hide loading screen when app is ready
+  useEffect(()=>{ window.__hideLoading && window.__hideLoading(); },[]);
 
   const handleLogin=id=>{
     setUserId(id);
