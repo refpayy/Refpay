@@ -1,16 +1,908 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>RefPay</title>
-    <link rel="manifest" href="/manifest.json"/>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script type="text/babel" src="App.jsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>RefPay</title>
+<link rel="manifest" href="/manifest.json"/>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#050508;font-family:'Outfit',sans-serif;color:#e8e8ff;overflow-x:hidden}
+input,textarea,select{font-family:'Outfit',sans-serif}
+input::placeholder,textarea::placeholder{color:#252535}
+input:focus,textarea:focus,select:focus{outline:none;border-color:#6d28d9!important;box-shadow:0 0 0 3px #6d28d910!important}
+::-webkit-scrollbar{width:2px}
+::-webkit-scrollbar-thumb{background:#6d28d933;border-radius:4px}
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes glow{0%,100%{box-shadow:0 0 30px #6d28d915,0 0 60px #b4840810}50%{box-shadow:0 0 50px #6d28d930,0 0 100px #b4840818}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@keyframes rain{0%{transform:translateY(-30px) rotate(0deg);opacity:0}5%{opacity:.8}90%{opacity:.3}100%{transform:translateY(105vh) rotate(360deg);opacity:0}}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes toast{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes neon{0%,100%{text-shadow:0 0 10px #b484085a,0 0 20px #b484084a,0 0 30px #b4840830}50%{text-shadow:0 0 20px #b48408aa,0 0 40px #b4840888,0 0 60px #b4840855}}
+.btn-press:active{transform:scale(.96)!important}
+.hoverable:hover{transform:translateY(-3px);transition:all .25s cubic-bezier(.34,1.56,.64,1)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const PLANS = [
+  { amount:500,  usd:1.8,  split:250,  label:"Starter",  color:"#a78bfa", icon:"⚡", desc:"Perfect for beginners" },
+  { amount:1000, usd:3.6,  split:500,  label:"Basic",    color:"#c8a84b", icon:"🥉", desc:"Most popular choice" },
+  { amount:2000, usd:7.2,  split:1000, label:"Silver",   color:"#94a3b8", icon:"🥈", desc:"Double your earnings" },
+  { amount:3000, usd:10.8, split:1500, label:"Gold",     color:"#f5c842", icon:"👑", desc:"Serious earners only" },
+  { amount:4000, usd:14.4, split:2000, label:"Platinum", color:"#7dd3fc", icon:"💎", desc:"Premium tier benefits" },
+  { amount:5000, usd:18.0, split:2500, label:"Diamond",  color:"#86efac", icon:"💠", desc:"Maximum earning potential" },
+];
+
+const MIN_WITHDRAW = 500;
+const ADMIN_PHONE = "03331942804";
+const ADMIN_PASSWORD = "9Xflix.com.refpay";
+
+const FAKE_WITHDRAWALS = [
+  {name:"Ahmed K.",amount:1000},{name:"Sara M.",amount:500},{name:"Bilal R.",amount:5000},
+  {name:"Zara N.",amount:1000},{name:"Usman T.",amount:2000},{name:"Hina F.",amount:500},
+  {name:"Kamran A.",amount:3000},{name:"Nadia S.",amount:1000},{name:"Faisal H.",amount:5000},
+  {name:"Ayesha Q.",amount:500},{name:"Tariq B.",amount:2000},{name:"Maryam L.",amount:1000},
+];
+
+function uid(){ return "U"+Date.now().toString(36).toUpperCase()+Math.floor(Math.random()*99); }
+function tid(){ return "T"+Date.now().toString(36).toUpperCase(); }
+function mkCode(n){
+  const letters="ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const prefix=(n||"USR").slice(0,3).toUpperCase().replace(/[^A-Z]/g,"X");
+  const suffix=Math.floor(1000+Math.random()*9000);
+  return prefix+suffix;
+}
+function getPlan(a){ return PLANS.find(p=>p.amount===Number(a))||PLANS[0]; }
+function toUSD(pkr){ return (pkr/278).toFixed(2); }
+
+const DB = {
+  users: {
+    ADMIN: {
+      id:"ADMIN", name:"Admin", phone:ADMIN_PHONE, password:ADMIN_PASSWORD,
+      role:"admin", balance:0, totalEarned:0,
+      referralCode:"REFPAY2025", referredBy:null,
+      depositDone:true, canRefer:true,
+      joinDate:"2025-01-01", transactions:[], withdrawals:[],
+    }
+  },
+  transactions:[], withdrawals:[],
+  tasks:[], taskSubmissions:[],
+  settings:{ adminEasypaisa: ADMIN_PHONE },
+  announcements:[
+    { id:"ann1", type:"gift", title:"🎁 Weekly Gift Bonus", desc:"Top 3 earners this week receive a bonus reward. Stay active!", date:"Coming Soon", color:"#f5c842" },
+    { id:"ann2", type:"coming", title:"🚀 RefPay Pro Launch", desc:"Advanced analytics, instant withdrawals & team dashboards. Coming Q2 2025.", date:"Q2 2025", color:"#a78bfa" },
+    { id:"ann3", type:"coming", title:"📱 Mobile App Release", desc:"Native iOS & Android app with push notifications launching soon.", date:"Coming Soon", color:"#7dd3fc" },
+  ],
+};
+
+function Particles(){
+  const shapes=["◆","✦","●","◇","✧","▸","⬡","◉"];
+  const colors=["#6d28d9","#b48408","#a78bfa","#f5c84255","#7dd3fc33"];
+  const p=Array.from({length:25},(_,i)=>({
+    id:i, s:shapes[i%shapes.length],
+    l:`${i*3.8+Math.random()*3}%`,
+    del:`${Math.random()*14}s`, dur:`${10+Math.random()*10}s`,
+    sz:`${8+Math.random()*8}px`, op:0.015+Math.random()*.04,
+    c:colors[i%colors.length],
+  }));
+  return(
+    <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,overflow:"hidden"}}>
+      {p.map(d=>(
+        <div key={d.id} style={{position:"absolute",left:d.l,top:"-30px",fontSize:d.sz,color:d.c,opacity:d.op,animation:`rain ${d.dur} ${d.del} linear infinite`}}>{d.s}</div>
+      ))}
+    </div>
+  );
+}
+
+function WithdrawTicker(){
+  const [idx,setIdx]=useState(0);
+  const [key,setKey]=useState(0);
+  useEffect(()=>{
+    const t=setInterval(()=>{
+      setIdx(i=>(i+1)%FAKE_WITHDRAWALS.length);
+      setKey(k=>k+1);
+    },4000);
+    return()=>clearInterval(t);
+  },[]);
+  const w=FAKE_WITHDRAWALS[idx];
+  return(
+    <div style={{background:"linear-gradient(90deg,#0a0900,#110f00,#0a0900)",borderTop:"1px solid #b4840822",borderBottom:"1px solid #b4840822",padding:"9px 0",overflow:"hidden",position:"relative"}}>
+      <div key={key} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,animation:"fadeIn .5s ease"}}>
+        <span style={{fontSize:11,color:"#b48408",fontWeight:700,letterSpacing:.5}}>💸 LIVE</span>
+        <span style={{width:6,height:6,borderRadius:"50%",background:"#22c55e",display:"inline-block",boxShadow:"0 0 8px #22c55e"}}/>
+        <span style={{fontSize:12,color:"#8a7020",fontWeight:500}}>
+          <span style={{color:"#c8a84b",fontWeight:700}}>{w.name}</span> just withdrew <span style={{color:"#f5e070",fontWeight:800}}>PKR {w.amount.toLocaleString()}</span> successfully
+        </span>
+        <span style={{fontSize:11,color:"#22c55e",fontWeight:700}}>✦ PAID</span>
+      </div>
+    </div>
+  );
+}
+
+function Logo({size=1}){
+  return(
+    <div style={{display:"flex",alignItems:"center",gap:10*size}}>
+      <div style={{width:44*size,height:44*size,borderRadius:14*size,background:"linear-gradient(135deg,#4c1d95,#6d28d9,#b48408)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22*size,boxShadow:"0 0 28px #6d28d955"}}>
+        <span>💸</span>
+      </div>
+      <div>
+        <div style={{fontSize:24*size,fontWeight:900,letterSpacing:-1,background:"linear-gradient(135deg,#c4b5fd 0%,#b48408 55%,#fde68a 100%)",backgroundSize:"200%",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",animation:"shimmer 6s linear infinite",lineHeight:1}}>RefPay</div>
+        {size>=1&&<div style={{fontSize:8,color:"#2a2a4a",letterSpacing:4,textTransform:"uppercase",marginTop:1,fontWeight:500}}>Global Earning Network</div>}
+      </div>
+    </div>
+  );
+}
+
+function Toast({msg,type,onClose}){
+  useEffect(()=>{const t=setTimeout(onClose,3500);return()=>clearTimeout(t);},[]);
+  const colors={success:"#10b981",error:"#ef4444",info:"#a78bfa"};
+  const c=colors[type]||"#a78bfa";
+  return(
+    <div style={{position:"fixed",bottom:32,left:"50%",transform:"translateX(-50%)",background:"#0c0c18",border:`1px solid ${c}44`,color:c,padding:"13px 26px",borderRadius:50,fontWeight:700,fontSize:13,zIndex:9999,whiteSpace:"nowrap",boxShadow:`0 8px 40px ${c}25`,animation:"toast .3s cubic-bezier(.34,1.56,.64,1)",letterSpacing:.3}}>
+      {type==="success"?"✦":type==="error"?"✕":"◆"} {msg}
+    </div>
+  );
+}
+
+function Inp({label,value,onChange,type="text",placeholder,hint,rows,required}){
+  return(
+    <div style={{marginBottom:16}}>
+      {label&&<div style={{fontSize:10,fontWeight:700,color:"#3a3a5a",marginBottom:6,letterSpacing:2,textTransform:"uppercase"}}>{label}{required&&<span style={{color:"#ef4444"}}>*</span>}</div>}
+      {rows
+        ?<textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows} style={{width:"100%",background:"#08080f",border:"1.5px solid #16162a",borderRadius:12,padding:"13px 15px",color:"#e8e8ff",fontSize:14,resize:"vertical"}}/>
+        :<input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={{width:"100%",background:"#08080f",border:"1.5px solid #16162a",borderRadius:12,padding:"13px 15px",color:"#e8e8ff",fontSize:14}}/>
+      }
+      {hint&&<div style={{fontSize:11,color:"#2a2a4a",marginTop:5,lineHeight:1.5}}>{hint}</div>}
+    </div>
+  );
+}
+
+function Btn({ch,onClick,v="primary",disabled=false,s={}}){
+  const vs={
+    primary:{background:"linear-gradient(135deg,#5b21b6,#7c3aed,#8b5cf6)",color:"#fff",border:"none",boxShadow:"0 4px 24px #6d28d940"},
+    gold:{background:"linear-gradient(135deg,#92400e,#b48408,#d97706,#f5c842)",backgroundSize:"200%",animation:"shimmer 3s linear infinite",color:"#0a0600",border:"none"},
+    green:{background:"linear-gradient(135deg,#064e3b,#065f46,#059669)",color:"#d1fae5",border:"none"},
+    red:{background:"linear-gradient(135deg,#450a0a,#7f1d1d,#b91c1c)",color:"#fca5a5",border:"none"},
+    ghost:{background:"transparent",border:"1.5px solid #6d28d933",color:"#a78bfa"},
+    dark:{background:"#08080f",border:"1.5px solid #16162a",color:"#3a3a5a"},
+    silver:{background:"linear-gradient(135deg,#1e293b,#334155)",color:"#cbd5e1",border:"1px solid #334155"},
+  };
+  return(
+    <button className="btn-press" onClick={onClick} disabled={disabled} style={{...vs[v],padding:"14px 20px",width:"100%",borderRadius:13,fontWeight:700,fontSize:13,cursor:disabled?"not-allowed":"pointer",opacity:disabled?.35:1,transition:"all .2s",letterSpacing:.5,...s}}>{ch}</button>
+  );
+}
+
+function Card({children,glow=false,color="#6d28d9",s={}}){
+  return(
+    <div className="hoverable" style={{background:"#0c0c18",border:`1px solid ${glow?color+"33":"#16162a"}`,borderRadius:20,padding:18,boxShadow:glow?`0 0 32px ${color}12`:"inset 0 1px 0 #ffffff04",...s}}>{children}</div>
+  );
+}
+
+function Badge({l,c="#a78bfa"}){
+  return <span style={{background:c+"18",color:c,borderRadius:20,padding:"3px 11px",fontSize:10,fontWeight:700,border:`1px solid ${c}22`,letterSpacing:.5}}>{l}</span>;
+}
+
+function StatsBar(){
+  const totalUsers=Object.values(DB.users).filter(u=>u.role!=="admin").length;
+  const activeUsers=Object.values(DB.users).filter(u=>u.role!=="admin"&&u.depositDone).length;
+  const pendingUsers=Object.values(DB.users).filter(u=>u.role!=="admin"&&!u.depositDone).length;
+  return(
+    <div style={{background:"linear-gradient(135deg,#0c0a20,#08080f)",border:"1px solid #6d28d922",borderRadius:16,padding:14,marginBottom:14}}>
+      <div style={{fontSize:10,fontWeight:700,color:"#3a3a5a",letterSpacing:2,textTransform:"uppercase",marginBottom:11}}>📊 Platform Stats (Live)</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:9}}>
+        {[
+          {l:"Registered",v:totalUsers,c:"#a78bfa",i:"👥"},
+          {l:"Active Members",v:activeUsers,c:"#22c55e",i:"✦"},
+          {l:"Pending",v:pendingUsers,c:"#f5c842",i:"⏳"},
+        ].map(s=>(
+          <div key={s.l} style={{background:"#08080f",border:"1px solid #16162a",borderRadius:12,padding:"11px 8px",textAlign:"center"}}>
+            <div style={{fontSize:18,marginBottom:4}}>{s.i}</div>
+            <div style={{fontSize:20,fontWeight:900,color:s.c}}>{s.v}</div>
+            <div style={{fontSize:9,color:"#2a2a4a",marginTop:2,letterSpacing:.5,fontWeight:600}}>{s.l.toUpperCase()}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Agreement({name,onAccept}){
+  const [checked,setChecked]=useState({c1:false,c2:false,c3:false,c4:false,c5:false,c6:false,c7:false,c8:false});
+  const allChecked=Object.values(checked).every(Boolean);
+  const clauses=[
+    {id:"c1",text:"I confirm that I am voluntarily joining RefPay of my own free will, without any pressure, coercion, or false promises from any person, including the admin or any member."},
+    {id:"c2",text:"I understand that RefPay is a referral-based earning platform. My earnings depend entirely on my own efforts in referring new members. No fixed income, salary, or profit is guaranteed."},
+    {id:"c3",text:"I acknowledge that the admin (RefPay) is not responsible for any losses, failed referrals, or unmet expectations. All deposits are final and non-refundable once verified."},
+    {id:"c4",text:"I will not attempt to defraud the platform by creating fake accounts, using fake transaction IDs, or manipulating the referral system in any way. Violation results in permanent ban."},
+    {id:"c5",text:"I will not take any legal action, file complaints, or contact authorities against RefPay admin as I am joining voluntarily and understand the platform's nature."},
+    {id:"c6",text:"I understand that withdrawal requests are processed within 1–24 hours and the admin is not liable for any delays caused by payment gateway issues."},
+    {id:"c7",text:"I agree that RefPay may update its terms, plans, or commission structures at any time. Continued use implies acceptance of updated terms."},
+    {id:"c8",text:"I confirm that all information I provide (name, phone, transaction ID) is accurate and truthful. Providing false information will result in account termination without refund."},
+  ];
+  return(
+    <div style={{background:"#06060f",minHeight:"100vh",position:"relative",overflow:"hidden"}}>
+      <Particles/>
+      <div style={{position:"relative",zIndex:1,padding:"20px 18px 48px",animation:"fadeUp .35s ease"}}>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <Logo size={1}/>
+          <div style={{marginTop:20,background:"linear-gradient(135deg,#450a0a,#1a0a2e)",border:"1px solid #6d28d933",borderRadius:18,padding:"18px 16px"}}>
+            <div style={{fontSize:22,marginBottom:8}}>📜</div>
+            <div style={{fontSize:17,fontWeight:900,color:"#fff",marginBottom:6}}>User Agreement & Terms</div>
+            <div style={{fontSize:12,color:"#4a3a6a",lineHeight:1.6}}>Please read carefully and tick each clause to confirm your understanding.</div>
+          </div>
+        </div>
+        <div style={{background:"#0c0c18",border:"1px solid #6d28d922",borderRadius:18,padding:16,marginBottom:16}}>
+          {clauses.map((c,i)=>(
+            <div key={c.id} onClick={()=>setChecked(p=>({...p,[c.id]:!p[c.id]}))} style={{display:"flex",gap:11,alignItems:"flex-start",padding:"12px 13px",marginBottom:8,borderRadius:12,cursor:"pointer",background:checked[c.id]?"#0d1f0d":"#08080f",border:`1.5px solid ${checked[c.id]?"#22c55e33":"#16162a"}`,transition:"all .2s"}}>
+              <div style={{width:22,height:22,borderRadius:7,border:`2px solid ${checked[c.id]?"#22c55e":"#2a2a4a"}`,background:checked[c.id]?"#22c55e":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
+                {checked[c.id]&&<span style={{color:"#fff",fontSize:12,fontWeight:900}}>✓</span>}
+              </div>
+              <div>
+                <div style={{fontSize:10,fontWeight:700,color:checked[c.id]?"#22c55e":"#3a3a5a",letterSpacing:1,marginBottom:3}}>CLAUSE {i+1}</div>
+                <div style={{fontSize:11,color:checked[c.id]?"#8abf8a":"#3a3a6a",lineHeight:1.65}}>{c.text}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <Btn ch={allChecked?"✦ I Agree & Create Account":"Please Accept All Clauses Above"} v={allChecked?"green":"dark"} disabled={!allChecked} onClick={onAccept}/>
+        {!allChecked&&<div style={{textAlign:"center",fontSize:11,color:"#2a2a3a",marginTop:8}}>{Object.values(checked).filter(Boolean).length}/8 clauses accepted</div>}
+      </div>
+    </div>
+  );
+}
+
+function Splash({onDone}){
+  useEffect(()=>{const t=setTimeout(onDone,3000);return()=>clearTimeout(t);},[]);
+  return(
+    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"radial-gradient(ellipse 130% 80% at 50% 10%,#1e0a4e 0%,#050508 65%)",position:"relative",overflow:"hidden"}}>
+      <Particles/>
+      <div style={{position:"relative",zIndex:1,textAlign:"center",animation:"fadeUp .9s ease"}}>
+        <div style={{position:"relative",width:150,height:150,margin:"0 auto 36px"}}>
+          <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"1.5px solid #6d28d933",animation:"spin 18s linear infinite",borderTopColor:"#6d28d988"}}/>
+          <div style={{position:"absolute",inset:10,borderRadius:"50%",border:"1px solid #b4840822",animation:"spin 12s linear infinite reverse",borderRightColor:"#b4840866"}}/>
+          <div style={{position:"absolute",inset:28,borderRadius:"50%",background:"radial-gradient(#1a0a3e,#050508)",display:"flex",alignItems:"center",justifyContent:"center",animation:"glow 3s ease-in-out infinite"}}>
+            <span style={{fontSize:46}}>💸</span>
+          </div>
+        </div>
+        <div style={{fontSize:52,fontWeight:900,background:"linear-gradient(135deg,#c4b5fd 0%,#b48408 45%,#fde68a 100%)",backgroundSize:"200%",animation:"shimmer 4s linear infinite",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:-2,lineHeight:1,marginBottom:10}}>RefPay</div>
+        <div style={{fontSize:12,color:"#2a2a4a",letterSpacing:6,textTransform:"uppercase",marginBottom:8}}>Global Earning Network</div>
+        <div style={{width:180,height:2,background:"#16162a",borderRadius:1,margin:"36px auto 0",overflow:"hidden"}}>
+          <div style={{height:"100%",background:"linear-gradient(90deg,#6d28d9,#a78bfa,#b48408,#fde68a)",animation:"shimmer 2.2s ease-in-out infinite",backgroundSize:"300%",borderRadius:1}}/>
+        </div>
+        <div style={{fontSize:10,color:"#1a1a2a",marginTop:10,letterSpacing:3,fontWeight:600}}>LOADING...</div>
+      </div>
+    </div>
+  );
+}
+
+function Auth({onLogin,toast}){
+  const [tab,setTab]=useState("login");
+  const [f,setF]=useState({name:"",phone:"",pw:"",ref:""});
+  const [err,setErr]=useState("");
+  const [showAgreement,setShowAgreement]=useState(false);
+  const set=k=>v=>setF(p=>({...p,[k]:v}));
+
+  const login=()=>{
+    setErr("");
+    if(f.phone===ADMIN_PHONE&&f.pw===ADMIN_PASSWORD){onLogin("ADMIN");return;}
+    const u=Object.values(DB.users).find(u=>u.phone===f.phone&&u.password===f.pw);
+    if(!u){setErr("Invalid phone or password.");return;}
+    onLogin(u.id);
+  };
+
+  const attemptRegister=()=>{
+    setErr("");
+    if(!f.name||!f.phone||!f.pw){setErr("All fields are required.");return;}
+    if(f.phone.length<10){setErr("Please enter a valid phone number.");return;}
+    if(Object.values(DB.users).find(u=>u.phone===f.phone)){setErr("This number is already registered.");return;}
+    if(!f.ref){setErr("A referral code is required to join RefPay.");return;}
+    const ref=Object.values(DB.users).find(u=>u.referralCode===f.ref.toUpperCase());
+    if(!ref){setErr("Invalid referral code.");return;}
+    if(!ref.depositDone&&ref.role!=="admin"){setErr("This referral code is not yet active.");return;}
+    setShowAgreement(true);
+  };
+
+  const completeRegister=()=>{
+    const ref=Object.values(DB.users).find(u=>u.referralCode===f.ref.toUpperCase());
+    const id=uid();
+    const code=mkCode(f.name);
+    DB.users[id]={
+      id,name:f.name,phone:f.phone,password:f.pw,role:"user",
+      balance:0,totalEarned:0,referralCode:code,
+      referredBy:f.ref.toUpperCase(),referrerId:ref.id,
+      depositDone:false,canRefer:false,
+      joinDate:new Date().toLocaleDateString("en-GB"),
+      transactions:[],withdrawals:[],
+      agreedToTerms:true,agreedAt:new Date().toISOString(),
+    };
+    toast("Account created! Complete your deposit to activate.","success");
+    onLogin(id);
+  };
+
+  if(showAgreement) return <Agreement name={f.name} onAccept={completeRegister}/>;
+
+  return(
+    <div style={{minHeight:"100vh",background:"#050508",position:"relative",overflow:"hidden"}}>
+      <Particles/>
+      <WithdrawTicker/>
+      <div style={{position:"relative",zIndex:1}}>
+        <div style={{background:"radial-gradient(ellipse 150% 70% at 50% 0%,#1e0a4e 0%,transparent 70%)",padding:"40px 20px 24px",textAlign:"center"}}>
+          <Logo size={1}/>
+          <div style={{marginTop:20,fontSize:28,fontWeight:900,color:"#fff",lineHeight:1.2,letterSpacing:-0.5}}>
+            Earn From Anywhere.<br/>
+            <span style={{background:"linear-gradient(135deg,#c4b5fd,#b48408)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Get Paid Instantly.</span>
+          </div>
+        </div>
+        <div style={{padding:"0 18px 48px"}}>
+          <StatsBar/>
+          <div style={{display:"flex",background:"#0c0c18",border:"1px solid #16162a",borderRadius:14,padding:4,marginBottom:18}}>
+            {["login","register"].map(t=>(
+              <button key={t} onClick={()=>{setTab(t);setErr("");}} style={{flex:1,padding:"11px 0",borderRadius:11,background:tab===t?"linear-gradient(135deg,#5b21b6,#7c3aed)":"transparent",color:tab===t?"#fff":"#2a2a4a",border:"none",fontWeight:800,fontSize:12,cursor:"pointer",letterSpacing:.5}}>
+                {t==="login"?"Sign In":"Create Account"}
+              </button>
+            ))}
+          </div>
+          <Card glow s={{padding:22,animation:"fadeUp .4s ease",marginBottom:14}}>
+            {tab==="register"&&<Inp label="Full Name" value={f.name} onChange={set("name")} placeholder="John Smith" required/>}
+            <Inp label="Phone Number" value={f.phone} onChange={set("phone")} placeholder="+923XXXXXXXXX" type="tel" required/>
+            <Inp label="Password" value={f.pw} onChange={set("pw")} placeholder="Create a strong password" type="password" required/>
+            {tab==="register"&&<Inp label="Referral Code" value={f.ref} onChange={set("ref")} placeholder="Enter referral code" hint="⚠ A valid referral code is mandatory to join" required/>}
+            {err&&<div style={{background:"#150606",border:"1px solid #7f1d1d33",borderRadius:11,padding:"11px 14px",color:"#f87171",fontSize:12,marginBottom:14,fontWeight:600}}>{err}</div>}
+            <Btn ch={tab==="login"?"Sign In to RefPay →":"Continue to Agreement →"} onClick={tab==="login"?login:attemptRegister}/>
+          </Card>
+          <div style={{background:"linear-gradient(135deg,#0a0800,#110f00)",border:"1px solid #b4840833",borderRadius:20,padding:18,marginBottom:14}}>
+            <div style={{fontSize:15,fontWeight:900,background:"linear-gradient(135deg,#c8a84b,#fde68a)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:14}}>👑 Investment Plans</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {PLANS.map(p=>(
+                <div key={p.amount} style={{background:"#0d0900",border:"1px solid #b4840822",borderRadius:13,padding:"13px 12px",borderLeft:`2px solid ${p.color}55`}}>
+                  <div style={{fontSize:16,marginBottom:4}}>{p.icon}</div>
+                  <div style={{fontWeight:800,fontSize:12,color:p.color}}>{p.label}</div>
+                  <div style={{fontSize:10,color:"#4a3a1a",marginTop:1}}>PKR {p.amount.toLocaleString()}</div>
+                  <div style={{fontSize:15,fontWeight:900,color:"#f5e070",marginTop:6}}>+PKR {p.split.toLocaleString()}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Deposit({userId,onBack,onDone,toast}){
+  const user=DB.users[userId];
+  const [sel,setSel]=useState(1000);
+  const [txn,setTxn]=useState("");
+  const [method,setMethod]=useState("easypaisa");
+  const plan=getPlan(sel);
+  const ep=DB.settings.adminEasypaisa;
+
+  const submit=()=>{
+    if(!txn.trim()){toast("Transaction reference is required","error");return;}
+    DB.transactions.push({id:tid(),userId,userName:user.name,userPhone:user.phone,amount:plan.amount,planLabel:plan.label,planIcon:plan.icon,planColor:plan.color,method,txnId:txn.trim(),adminShare:plan.split,referrerShare:plan.split,referrerId:user.referrerId||null,referrerCode:user.referredBy||null,date:new Date().toLocaleDateString("en-GB"),timestamp:Date.now(),status:"pending"});
+    toast("Deposit submitted! Admin will verify within 24 hours.","success");
+    onDone();
+  };
+
+  return(
+    <div style={{background:"#050508",minHeight:"100vh",position:"relative",overflow:"hidden"}}>
+      <Particles/>
+      <WithdrawTicker/>
+      <div style={{position:"relative",zIndex:1,padding:18,paddingBottom:48,animation:"fadeUp .3s ease"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:22}}>
+          <button onClick={onBack} style={{background:"#0c0c18",border:"1px solid #16162a",color:"#3a3a5a",borderRadius:10,padding:"9px 14px",cursor:"pointer",fontSize:17}}>←</button>
+          <div>
+            <div style={{fontSize:20,fontWeight:900,color:"#fff"}}>Select Investment Plan</div>
+            <div style={{fontSize:11,color:"#2a2a4a"}}>50/50 split — you & your referrer earn equally</div>
+          </div>
+        </div>
+        {PLANS.map(p=>{
+          const isSel=sel===p.amount;
+          return(
+            <div key={p.amount} onClick={()=>setSel(p.amount)} style={{background:isSel?`linear-gradient(135deg,${p.color}10,${p.color}05)`:"#0c0c18",border:`${isSel?2:1}px solid ${isSel?p.color:p.color+"15"}`,borderRadius:16,padding:"14px 15px",marginBottom:8,cursor:"pointer",transition:"all .2s"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div style={{display:"flex",alignItems:"center",gap:11}}>
+                  <div style={{width:44,height:44,borderRadius:12,background:isSel?p.color+"20":"#080810",border:`1.5px solid ${p.color}${isSel?"66":"18"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{p.icon}</div>
+                  <div>
+                    <div style={{fontSize:14,fontWeight:900,color:isSel?p.color:"#3a3a5a"}}>{p.label}</div>
+                    <div style={{fontSize:10,color:"#2a2a4a"}}>{p.desc}</div>
+                  </div>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:17,fontWeight:900,color:p.color}}>+{p.split.toLocaleString()}</div>
+                  <div style={{fontSize:9,color:"#2a2a4a",fontWeight:600}}>PKR/REFERRAL</div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        <Card s={{marginBottom:12}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#3a3a5a",letterSpacing:2,textTransform:"uppercase",marginBottom:12}}>Payment Method</div>
+          {[{id:"easypaisa",l:"EasyPaisa",icon:"💚",c:"#22c55e"},{id:"jazzcash",l:"JazzCash",icon:"🔴",c:"#ec4899"}].map(m=>(
+            <div key={m.id} onClick={()=>setMethod(m.id)} style={{display:"flex",alignItems:"center",gap:11,padding:"12px 13px",borderRadius:12,marginBottom:7,cursor:"pointer",border:`1.5px solid ${method===m.id?m.c:"#16162a"}`,background:method===m.id?m.c+"0c":"transparent",transition:"all .2s"}}>
+              <span style={{fontSize:20}}>{m.icon}</span>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:800,fontSize:13,color:method===m.id?m.c:"#3a3a5a"}}>{m.l}</div>
+                <div style={{fontSize:11,color:"#2a2a4a"}}>{ep}</div>
+              </div>
+              <div style={{width:18,height:18,borderRadius:9,border:`2px solid ${method===m.id?m.c:"#2a2a4a"}`,background:method===m.id?m.c:"transparent"}}/>
+            </div>
+          ))}
+        </Card>
+        <Inp label="Transaction Reference / ID" value={txn} onChange={setTxn} placeholder="e.g. EP9876543210" required/>
+        <Btn ch={`${plan.icon} Confirm PKR ${plan.amount.toLocaleString()} Deposit`} v="primary" onClick={submit} disabled={!txn.trim()}/>
+      </div>
+    </div>
+  );
+}
+
+function Withdraw({userId,onBack,toast,refresh}){
+  const user=DB.users[userId];
+  const [amt,setAmt]=useState("");
+  const [method,setMethod]=useState("easypaisa");
+  const [acc,setAcc]=useState("");
+  const [name,setName]=useState("");
+  const n=parseInt(amt)||0;
+
+  const submit=()=>{
+    if(n<MIN_WITHDRAW){toast(`Minimum withdrawal is PKR ${MIN_WITHDRAW}`,"error");return;}
+    if(n>user.balance){toast("Insufficient balance","error");return;}
+    if(!acc||!name){toast("Account details are required","error");return;}
+    DB.users[userId].balance-=n;
+    const w={id:tid(),userId,userName:user.name,amount:n,fee:0,youGet:n,method,accNumber:acc,accName:name,date:new Date().toLocaleDateString("en-GB"),status:"pending"};
+    DB.withdrawals.push(w);
+    if(!DB.users[userId].withdrawals)DB.users[userId].withdrawals=[];
+    DB.users[userId].withdrawals.push(w);
+    toast(`Withdrawal of PKR ${n.toLocaleString()} submitted!`,"success");
+    refresh();onBack();
+  };
+
+  return(
+    <div style={{background:"#050508",minHeight:"100vh",position:"relative",overflow:"hidden"}}>
+      <Particles/>
+      <div style={{position:"relative",zIndex:1,padding:18,paddingBottom:48,animation:"fadeUp .3s ease"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:22}}>
+          <button onClick={onBack} style={{background:"#0c0c18",border:"1px solid #16162a",color:"#3a3a5a",borderRadius:10,padding:"9px 14px",cursor:"pointer",fontSize:17}}>←</button>
+          <div style={{fontSize:20,fontWeight:900,color:"#fff"}}>Withdraw Earnings</div>
+        </div>
+        <div style={{background:"linear-gradient(135deg,#1a0a3e,#0c0c18)",border:"1px solid #6d28d930",borderRadius:20,padding:22,marginBottom:14,textAlign:"center",animation:"glow 4s ease-in-out infinite"}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#2a2a4a",letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>Available Balance</div>
+          <div style={{fontSize:38,fontWeight:900,color:"#a78bfa",letterSpacing:-1,lineHeight:1}}>PKR {user.balance.toLocaleString()}</div>
+        </div>
+        <Card s={{marginBottom:12}}>
+          <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
+            {[500,1000,2000,5000].map(a=>(
+              <button key={a} onClick={()=>setAmt(String(a))} style={{flex:1,minWidth:55,padding:"9px 0",borderRadius:9,background:amt===String(a)?"linear-gradient(135deg,#5b21b6,#7c3aed)":"#080810",color:amt===String(a)?"#fff":"#2a2a4a",border:`1px solid ${amt===String(a)?"transparent":"#16162a"}`,fontWeight:800,fontSize:12,cursor:"pointer"}}>₨{a}</button>
+            ))}
+          </div>
+          <Inp value={amt} onChange={setAmt} type="number" placeholder="Or enter custom amount"/>
+        </Card>
+        <Card s={{marginBottom:12}}>
+          {[{id:"easypaisa",l:"EasyPaisa",icon:"💚",c:"#22c55e"},{id:"jazzcash",l:"JazzCash",icon:"🔴",c:"#ec4899"}].map(m=>(
+            <div key={m.id} onClick={()=>setMethod(m.id)} style={{display:"flex",alignItems:"center",gap:11,padding:"12px 13px",borderRadius:12,marginBottom:7,cursor:"pointer",border:`1.5px solid ${method===m.id?m.c:"#16162a"}`,background:method===m.id?m.c+"0c":"transparent",transition:"all .2s"}}>
+              <span style={{fontSize:20}}>{m.icon}</span>
+              <div style={{flex:1,fontWeight:800,fontSize:13,color:method===m.id?m.c:"#3a3a5a"}}>{m.l}</div>
+            </div>
+          ))}
+        </Card>
+        <Card s={{marginBottom:16}}>
+          <Inp label="Account Number" value={acc} onChange={setAcc} placeholder="+923XXXXXXXXX" type="tel" required/>
+          <Inp label="Account Holder Name" value={name} onChange={setName} placeholder="Full name as registered" required/>
+        </Card>
+        <Btn ch={`Withdraw PKR ${n>=MIN_WITHDRAW?n.toLocaleString():"---"} →`} v="primary" onClick={submit} disabled={n<MIN_WITHDRAW||!acc||!name}/>
+      </div>
+    </div>
+  );
+}
+
+function TasksScreen({userId,onBack,toast,refresh}){
+  const user=DB.users[userId];
+  const [activeTask,setActiveTask]=useState(null);
+  const [sub,setSub]=useState("");
+  const mySubmissions=DB.taskSubmissions.filter(s=>s.userId===userId);
+  const activeTasks=DB.tasks.filter(t=>t.status==="active");
+
+  const submit=(taskId)=>{
+    if(!sub.trim()){toast("Please provide your submission link or details","error");return;}
+    const task=DB.tasks.find(t=>t.id===taskId);
+    if(!task)return;
+    if(DB.taskSubmissions.find(s=>s.userId===userId&&s.taskId===taskId)){toast("You already submitted this task","error");return;}
+    DB.taskSubmissions.push({id:tid(),userId,userName:user.name,userPhone:user.phone,taskId,taskTitle:task.title,taskCommission:task.commission,submission:sub.trim(),date:new Date().toLocaleDateString("en-GB"),timestamp:Date.now(),status:"pending"});
+    toast("Task submitted! Review within 24 hours.","success");
+    setSub("");setActiveTask(null);refresh();
+  };
+
+  return(
+    <div style={{background:"#050508",minHeight:"100vh",position:"relative",overflow:"hidden"}}>
+      <Particles/>
+      <div style={{position:"relative",zIndex:1,padding:18,paddingBottom:48,animation:"fadeUp .3s ease"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:22}}>
+          <button onClick={onBack} style={{background:"#0c0c18",border:"1px solid #16162a",color:"#3a3a5a",borderRadius:10,padding:"9px 14px",cursor:"pointer",fontSize:17}}>←</button>
+          <div>
+            <div style={{fontSize:20,fontWeight:900,color:"#fff"}}>Task Center</div>
+            <div style={{fontSize:11,color:"#2a2a4a"}}>Complete tasks & earn commissions</div>
+          </div>
+        </div>
+        {activeTasks.length===0?(
+          <Card s={{textAlign:"center",padding:44}}>
+            <div style={{fontSize:44,marginBottom:14,animation:"float 2s ease-in-out infinite"}}>🎯</div>
+            <div style={{fontSize:17,color:"#2a2a4a",marginBottom:6,fontWeight:800}}>No Active Tasks</div>
+            <div style={{fontSize:12,color:"#1a1a2a"}}>New tasks will appear here. Check back soon!</div>
+          </Card>
+        ):(
+          activeTasks.map(task=>{
+            const mySub=mySubmissions.find(s=>s.taskId===task.id);
+            const isActive=activeTask===task.id;
+            return(
+              <Card key={task.id} glow={isActive} color="#a78bfa" s={{marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                  <div style={{flex:1,marginRight:12}}>
+                    <div style={{fontSize:14,fontWeight:900,color:"#fff",marginBottom:4}}>{task.title}</div>
+                    <div style={{fontSize:11,color:"#2a2a4a",lineHeight:1.6}}>{task.description}</div>
+                  </div>
+                  <div style={{textAlign:"center",flexShrink:0}}>
+                    <div style={{fontSize:20,fontWeight:900,color:"#b48408",lineHeight:1}}>{task.commission.toLocaleString()}</div>
+                    <div style={{fontSize:9,color:"#2a2a4a",fontWeight:600}}>PKR</div>
+                  </div>
+                </div>
+                {mySub?(
+                  <div style={{background:mySub.status==="approved"?"#0a1f0d":mySub.status==="rejected"?"#150606":"#121000",border:`1px solid ${mySub.status==="approved"?"#22c55e22":mySub.status==="rejected"?"#7f1d1d":"#b4840822"}`,borderRadius:11,padding:"10px 14px"}}>
+                    <div style={{fontSize:13,fontWeight:800,color:mySub.status==="approved"?"#22c55e":mySub.status==="rejected"?"#ef4444":"#b48408"}}>
+                      {mySub.status==="approved"?"✦ Approved!":mySub.status==="rejected"?"✕ Rejected":"⏳ Under Review..."}
+                    </div>
+                  </div>
+                ):isActive?(
+                  <div style={{animation:"fadeIn .2s ease"}}>
+                    <Inp label="Submission Link or Details" value={sub} onChange={setSub} placeholder="YouTube / Google Drive link..." rows={3}/>
+                    <div style={{display:"flex",gap:7}}>
+                      <Btn ch="Submit ✦" v="primary" onClick={()=>submit(task.id)} disabled={!sub.trim()}/>
+                      <Btn ch="Cancel" v="dark" onClick={()=>setActiveTask(null)} s={{flex:"0 0 90px"}}/>
+                    </div>
+                  </div>
+                ):(
+                  <Btn ch="Accept Task →" v="ghost" onClick={()=>setActiveTask(task.id)}/>
+                )}
+              </Card>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+function UserDash({userId,onLogout,onDeposit,onWithdraw,onTasks,toast}){
+  const user=DB.users[userId];
+  if(!user)return null;
+  const refs=Object.values(DB.users).filter(u=>u.referrerId===userId);
+  const activeRefs=refs.filter(u=>u.depositDone);
+  const pendingDep=DB.transactions.find(t=>t.userId===userId&&t.status==="pending");
+  const approvedDep=DB.transactions.find(t=>t.userId===userId&&t.status==="approved");
+  const myPlan=approvedDep?getPlan(approvedDep.amount):null;
+  const activeTasks=DB.tasks.filter(t=>t.status==="active").length;
+
+  const copyCode=()=>{
+    navigator.clipboard?.writeText(user.referralCode).catch(()=>{});
+    toast("Referral code copied!","success");
+  };
+
+  return(
+    <div style={{background:"#050508",minHeight:"100vh",position:"relative",overflow:"hidden"}}>
+      <Particles/>
+      <WithdrawTicker/>
+      <div style={{position:"relative",zIndex:1,padding:"16px 16px 48px",animation:"fadeUp .35s ease"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+          <Logo/>
+          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            <div style={{background:"#0c0c18",border:"1px solid #16162a",borderRadius:9,padding:"5px 10px",fontSize:11,color:"#3a3a5a",fontWeight:600}}>{user.name.split(" ")[0]}</div>
+            <button onClick={onLogout} style={{background:"#0c0c18",border:"1px solid #16162a",color:"#3a3a5a",borderRadius:9,padding:"5px 10px",cursor:"pointer",fontSize:11,fontWeight:600}}>Sign Out</button>
+          </div>
+        </div>
+        <StatsBar/>
+        {!user.depositDone&&(
+          <div style={{background:"linear-gradient(135deg,#1a0606,#0c0c18)",border:"1px solid #7f1d1d33",borderRadius:16,padding:16,marginBottom:14}}>
+            <div style={{fontSize:16,fontWeight:900,color:"#ef4444",marginBottom:6}}>⚡ Account Not Activated</div>
+            {pendingDep
+              ?<div style={{fontSize:12,color:"#2a2a4a"}}>Your deposit is under review. Admin will verify within 24 hours.</div>
+              :<><div style={{fontSize:12,color:"#2a2a4a",marginBottom:12}}>Select an investment plan to activate your account.</div><Btn ch="View Investment Plans →" v="primary" onClick={onDeposit} s={{padding:"12px 0"}}/></>
+            }
+          </div>
+        )}
+        <div style={{background:"linear-gradient(135deg,#1a0a3e,#0c0c18,#0a0a20)",border:"1px solid #6d28d930",borderRadius:22,padding:"24px 20px",marginBottom:14,position:"relative",overflow:"hidden",animation:"glow 4s ease-in-out infinite"}}>
+          {myPlan&&<div style={{display:"inline-flex",alignItems:"center",gap:6,background:myPlan.color+"15",border:`1px solid ${myPlan.color}30`,borderRadius:20,padding:"4px 12px",marginBottom:14,fontSize:10,fontWeight:800,color:myPlan.color}}>{myPlan.icon} {myPlan.label.toUpperCase()} MEMBER</div>}
+          <div style={{fontSize:10,fontWeight:700,color:"#2a2a4a",letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Total Balance</div>
+          <div style={{fontSize:40,fontWeight:900,color:"#a78bfa",letterSpacing:-2,lineHeight:1}}>PKR {user.balance.toLocaleString()}</div>
+          <div style={{fontSize:11,color:"#2a2a4a",marginTop:4}}>≈ ${toUSD(user.balance)} USD</div>
+          <div style={{display:"flex",gap:20,marginTop:16}}>
+            {[{l:"Referrals",v:activeRefs.length,c:"#b48408"},{l:"Total Earned",v:`₨${user.totalEarned.toLocaleString()}`,c:"#a78bfa"},{l:"Status",v:user.depositDone?"Active":"Inactive",c:user.depositDone?"#22c55e":"#ef4444"}].map(s=>(
+              <div key={s.l}>
+                <div style={{fontSize:14,fontWeight:900,color:s.c}}>{s.v}</div>
+                <div style={{fontSize:9,color:"#1a1a2a",marginTop:2,letterSpacing:.5,fontWeight:600}}>{s.l.toUpperCase()}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:7,marginTop:16}}>
+            <button onClick={onDeposit} style={{flex:1,background:"#0c0c18",border:"1px solid #6d28d930",borderRadius:11,padding:"11px 0",fontWeight:800,fontSize:11,color:"#a78bfa",cursor:"pointer",letterSpacing:.5}}>+ DEPOSIT</button>
+            <button onClick={onWithdraw} disabled={!user.depositDone||user.balance<MIN_WITHDRAW} style={{flex:1,background:user.depositDone&&user.balance>=MIN_WITHDRAW?"linear-gradient(135deg,#5b21b6,#7c3aed)":"#0c0c18",border:"none",borderRadius:11,padding:"11px 0",fontWeight:800,fontSize:11,color:user.depositDone&&user.balance>=MIN_WITHDRAW?"#fff":"#1a1a2a",cursor:user.depositDone&&user.balance>=MIN_WITHDRAW?"pointer":"not-allowed",letterSpacing:.5}}>WITHDRAW</button>
+          </div>
+        </div>
+        <div onClick={onTasks} style={{background:"linear-gradient(135deg,#1a0a3e,#0c0c18)",border:"1px solid #6d28d928",borderRadius:15,padding:14,marginBottom:14,cursor:"pointer",display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:46,height:46,borderRadius:13,background:"#6d28d918",border:"1.5px solid #6d28d940",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,animation:"float 2.5s ease-in-out infinite"}}>🎯</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:900,color:"#a78bfa"}}>Task Center</div>
+            <div style={{fontSize:11,color:"#2a2a4a",marginTop:2}}>{activeTasks>0?`${activeTasks} task(s) available`:"Stay tuned for new tasks"}</div>
+          </div>
+          <div style={{color:"#6d28d9",fontSize:18,fontWeight:900}}>→</div>
+        </div>
+        {user.depositDone?(
+          <Card glow s={{marginBottom:14}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#3a3a5a",letterSpacing:2,textTransform:"uppercase",marginBottom:12}}>Your Referral Code</div>
+            <div style={{display:"flex",gap:9,alignItems:"center",marginBottom:10}}>
+              <div style={{flex:1,background:"#050508",borderRadius:12,padding:"14px 0",textAlign:"center",border:"1.5px dashed #6d28d930",fontSize:22,fontWeight:900,letterSpacing:7,color:"#a78bfa"}}>{user.referralCode}</div>
+              <button onClick={copyCode} style={{background:"linear-gradient(135deg,#5b21b6,#7c3aed)",color:"#fff",border:"none",borderRadius:12,padding:"14px 14px",fontWeight:800,cursor:"pointer",fontSize:12}}>Copy</button>
+            </div>
+          </Card>
+        ):(
+          <div style={{background:"#0c0c18",border:"1px solid #16162a",borderRadius:16,padding:16,marginBottom:14,opacity:.5}}>
+            <div style={{fontSize:12,color:"#ef4444",fontWeight:700}}>🔒 Referral code unlocks after deposit approval</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AdminPanel({onLogout,toast}){
+  const [tab,setTab]=useState("deposits");
+  const [ep,setEp]=useState(DB.settings.adminEasypaisa);
+  const [tick,setTick]=useState(0);
+  const refresh=()=>setTick(t=>t+1);
+  const [nt,setNt]=useState({title:"",desc:"",cat:"Video Editing",commission:"",deadline:"",req:""});
+  const snt=k=>v=>setNt(p=>({...p,[k]:v}));
+
+  const pDeps=DB.transactions.filter(t=>t.status==="pending");
+  const pW=DB.withdrawals.filter(w=>w.status==="pending");
+  const pSubs=DB.taskSubmissions.filter(s=>s.status==="pending");
+  const users=Object.values(DB.users).filter(u=>u.role!=="admin");
+  const aDeps=DB.transactions.filter(t=>t.status==="approved");
+  const totalAdmin=aDeps.reduce((s,t)=>s+t.adminShare,0);
+  const totalRef=aDeps.reduce((s,t)=>s+t.referrerShare,0);
+
+  const appD=id=>{
+    const t=DB.transactions.find(x=>x.id===id);if(!t)return;
+    t.status="approved";
+    if(DB.users[t.userId]){DB.users[t.userId].depositDone=true;DB.users[t.userId].canRefer=true;}
+    if(t.referrerId&&DB.users[t.referrerId]){
+      DB.users[t.referrerId].balance+=t.referrerShare;
+      DB.users[t.referrerId].totalEarned+=t.referrerShare;
+    }
+    DB.users.ADMIN.balance+=t.adminShare;DB.users.ADMIN.totalEarned+=t.adminShare;
+    toast(`Approved! Platform earned PKR ${t.adminShare.toLocaleString()}`,"success");refresh();
+  };
+  const rejD=id=>{const t=DB.transactions.find(x=>x.id===id);if(t)t.status="rejected";toast("Deposit rejected","error");refresh();};
+  const appW=id=>{const w=DB.withdrawals.find(x=>x.id===id);if(!w)return;w.status="approved";toast(`Send PKR ${w.youGet.toLocaleString()} to ${w.accNumber}`,"success");refresh();};
+  const rejW=id=>{const w=DB.withdrawals.find(x=>x.id===id);if(!w)return;w.status="rejected";if(DB.users[w.userId])DB.users[w.userId].balance+=w.amount;toast("Rejected — balance refunded","info");refresh();};
+  const appS=id=>{
+    const s=DB.taskSubmissions.find(x=>x.id===id);if(!s)return;
+    s.status="approved";
+    if(DB.users[s.userId]){DB.users[s.userId].balance+=s.taskCommission;DB.users[s.userId].totalEarned+=s.taskCommission;}
+    toast(`Task approved! PKR ${s.taskCommission.toLocaleString()} paid`,"success");refresh();
+  };
+  const rejS=id=>{const s=DB.taskSubmissions.find(x=>x.id===id);if(s)s.status="rejected";toast("Task rejected","error");refresh();};
+  const addTask=()=>{
+    if(!nt.title||!nt.commission){toast("Title and commission required","error");return;}
+    DB.tasks.push({id:tid(),title:nt.title,description:nt.desc,category:nt.cat,commission:parseInt(nt.commission)||0,deadline:nt.deadline||"Open",requirements:nt.req,status:"active",date:new Date().toLocaleDateString("en-GB")});
+    setNt({title:"",desc:"",cat:"Video Editing",commission:"",deadline:"",req:""});
+    toast("Task posted successfully!","success");refresh();
+  };
+
+  return(
+    <div style={{background:"#050508",minHeight:"100vh",position:"relative",overflow:"hidden"}}>
+      <Particles/>
+      <div style={{position:"relative",zIndex:1,padding:"16px 16px 48px",animation:"fadeUp .35s ease"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div><Logo/><div style={{display:"inline-flex",alignItems:"center",gap:5,marginTop:6,background:"#1a0a3e",border:"1px solid #6d28d930",borderRadius:20,padding:"3px 11px"}}><span style={{fontSize:9,fontWeight:800,color:"#a78bfa",letterSpacing:1}}>🔐 ADMIN DASHBOARD</span></div></div>
+          <button onClick={onLogout} style={{background:"#0c0c18",border:"1px solid #16162a",color:"#2a2a4a",borderRadius:9,padding:"7px 13px",cursor:"pointer",fontSize:11,fontWeight:700}}>Sign Out</button>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+          {[
+            {l:"Platform Revenue",v:`₨${totalAdmin.toLocaleString()}`,c:"#b48408",i:"💰"},
+            {l:"Paid to Members",v:`₨${totalRef.toLocaleString()}`,c:"#22c55e",i:"💸"},
+            {l:"Registered",v:users.length,c:"#a78bfa",i:"👥"},
+            {l:"Active Members",v:users.filter(u=>u.depositDone).length,c:"#7dd3fc",i:"✦"},
+            {l:"Pending Actions",v:pDeps.length+pW.length+pSubs.length,c:pDeps.length+pW.length+pSubs.length>0?"#ef4444":"#2a2a4a",i:"⏳"},
+            {l:"Admin Code",v:"REFPAY2025",c:"#f5c842",i:"🔗"},
+          ].map(s=>(
+            <div key={s.l} style={{background:"#0c0c18",border:"1px solid #16162a",borderRadius:13,padding:12,borderTop:`2px solid ${s.c}`}}>
+              <div style={{fontSize:9,color:"#2a2a4a",letterSpacing:.5,textTransform:"uppercase",marginBottom:4,fontWeight:700}}>{s.i} {s.l}</div>
+              <div style={{fontSize:16,fontWeight:900,color:s.c}}>{s.v}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{background:"#0c0a00",border:"1px solid #b4840830",borderRadius:14,padding:14,marginBottom:14}}>
+          <div style={{fontSize:12,fontWeight:900,color:"#b48408",marginBottom:9}}>⚙️ Admin Payment Number</div>
+          <div style={{display:"flex",gap:7}}>
+            <input value={ep} onChange={e=>setEp(e.target.value)} placeholder="03XXXXXXXXX" style={{flex:1,background:"#050508",border:"1.5px solid #b4840820",borderRadius:10,padding:"10px 13px",color:"#e8e8ff",fontSize:13,outline:"none",fontFamily:"'Outfit',sans-serif"}}/>
+            <button onClick={()=>{DB.settings.adminEasypaisa=ep;toast("Saved!","success");}} style={{background:"linear-gradient(135deg,#92400e,#b48408,#d97706)",color:"#0a0600",border:"none",borderRadius:10,padding:"10px 15px",fontWeight:900,cursor:"pointer",fontSize:12}}>Save</button>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:3}}>
+          {[
+            ["deposits",`Deposits (${pDeps.length})`, "#b48408"],
+            ["withdrawals",`Withdrawals (${pW.length})`, "#7dd3fc"],
+            ["tasks",`Tasks (${pSubs.length})`, "#a78bfa"],
+            ["newtask","+ New Task", "#22c55e"],
+            ["members",`Members (${users.length})`, "#94a3b8"],
+          ].map(([id,l,c])=>(
+            <button key={id} onClick={()=>setTab(id)} style={{padding:"7px 12px",borderRadius:20,whiteSpace:"nowrap",flexShrink:0,background:tab===id?c+"15":"#0c0c18",color:tab===id?c:"#2a2a4a",border:`1px solid ${tab===id?c+"33":"#16162a"}`,fontWeight:700,fontSize:10,cursor:"pointer",transition:"all .2s"}}>{l}</button>
+          ))}
+        </div>
+        {tab==="deposits"&&(
+          <div>
+            {pDeps.length===0?<div style={{textAlign:"center",color:"#2a2a4a",padding:40,fontSize:12}}>No pending deposits ✦</div>:
+            pDeps.map(t=>{
+              const p=getPlan(t.amount);
+              return(
+                <Card key={t.id} glow color={p.color} s={{marginBottom:10}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:9}}>
+                    <div><div style={{fontWeight:800,color:"#ddd",fontSize:12}}>{t.userName}</div><div style={{fontSize:9,color:"#1a1a2a"}}>{t.userPhone} · {t.date}</div></div>
+                    <Badge l="Pending" c="#b48408"/>
+                  </div>
+                  <div style={{fontSize:10,color:"#1a1a2a",marginBottom:9}}>TXN: {t.txnId}</div>
+                  <div style={{display:"flex",gap:7}}>
+                    <Btn ch="✦ Approve" v="primary" onClick={()=>appD(t.id)} s={{padding:"10px 0",fontSize:12}}/>
+                    <Btn ch="✕ Reject" v="red" onClick={()=>rejD(t.id)} s={{padding:"10px 0",fontSize:12}}/>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+        {tab==="withdrawals"&&(
+          <div>
+            {pW.length===0?<div style={{textAlign:"center",color:"#2a2a4a",padding:40,fontSize:12}}>No pending withdrawals</div>:
+            pW.map(w=>(
+              <Card key={w.id} glow color="#7dd3fc" s={{marginBottom:10}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:9}}>
+                  <div><div style={{fontWeight:800,color:"#ddd",fontSize:12}}>{w.userName}</div><div style={{fontSize:9,color:"#1a1a2a"}}>{w.date}</div></div>
+                  <Badge l="Pending" c="#b48408"/>
+                </div>
+                <div style={{background:"#050508",borderRadius:11,padding:12,marginBottom:9}}>
+                  <div style={{fontSize:22,fontWeight:900,color:"#a78bfa",marginBottom:6}}>PKR {w.youGet.toLocaleString()}</div>
+                  <div style={{fontSize:12,color:"#555"}}>📱 {w.method}: <b style={{color:"#e8e8ff"}}>{w.accNumber}</b></div>
+                </div>
+                <div style={{display:"flex",gap:7}}>
+                  <Btn ch="✦ Mark Sent" v="primary" onClick={()=>appW(w.id)} s={{padding:"10px 0",fontSize:12}}/>
+                  <Btn ch="✕ Reject" v="red" onClick={()=>rejW(w.id)} s={{padding:"10px 0",fontSize:12}}/>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+        {tab==="tasks"&&(
+          <div>
+            {pSubs.length===0?<div style={{textAlign:"center",color:"#2a2a4a",padding:36,fontSize:12}}>No pending submissions</div>:
+            pSubs.map(s=>(
+              <Card key={s.id} glow color="#a78bfa" s={{marginBottom:10}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:9}}>
+                  <div><div style={{fontWeight:800,color:"#ddd",fontSize:12}}>{s.userName}</div><div style={{fontSize:9,color:"#1a1a2a"}}>{s.date}</div></div>
+                  <Badge l="Review" c="#b48408"/>
+                </div>
+                <div style={{background:"#050508",borderRadius:11,padding:11,marginBottom:9}}>
+                  <div style={{fontSize:10,fontWeight:800,color:"#a78bfa",marginBottom:4}}>🎯 {s.taskTitle}</div>
+                  <div style={{fontSize:11,color:"#555",wordBreak:"break-all"}}>{s.submission}</div>
+                  <div style={{fontSize:16,fontWeight:900,color:"#b48408",marginTop:7}}>PKR {s.taskCommission.toLocaleString()}</div>
+                </div>
+                <div style={{display:"flex",gap:7}}>
+                  <Btn ch="✦ Approve" v="green" onClick={()=>appS(s.id)} s={{padding:"10px 0",fontSize:12}}/>
+                  <Btn ch="✕ Reject" v="red" onClick={()=>rejS(s.id)} s={{padding:"10px 0",fontSize:12}}/>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+        {tab==="newtask"&&(
+          <Card glow color="#22c55e">
+            <div style={{fontSize:15,fontWeight:900,color:"#fff",marginBottom:16}}>Post New Task</div>
+            <Inp label="Task Title" value={nt.title} onChange={snt("title")} placeholder="e.g. Create a Travel Vlog Video" required/>
+            <Inp label="Description" value={nt.desc} onChange={snt("desc")} placeholder="Detailed task requirements..." rows={3}/>
+            <Inp label="Commission (PKR)" value={nt.commission} onChange={snt("commission")} placeholder="e.g. 500" type="number" required/>
+            <Inp label="Deadline" value={nt.deadline} onChange={snt("deadline")} placeholder="e.g. 3 days / Open"/>
+            <Btn ch="🎯 Post Task" v="green" onClick={addTask} disabled={!nt.title||!nt.commission}/>
+          </Card>
+        )}
+        {tab==="members"&&(
+          <div>
+            {users.length===0?<div style={{textAlign:"center",color:"#2a2a4a",padding:36,fontSize:12}}>No members yet</div>:
+            users.map(u=>{
+              const dep=DB.transactions.find(t=>t.userId===u.id&&t.status==="approved");
+              const p=dep?getPlan(dep.amount):null;
+              return(
+                <div key={u.id} style={{background:"#0c0c18",border:"1px solid #16162a",borderRadius:14,padding:13,marginBottom:8}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+                    <div style={{fontWeight:800,color:"#ddd",fontSize:12}}>{u.name}</div>
+                    <Badge l={u.depositDone?"Active":"Inactive"} c={u.depositDone?"#22c55e":"#ef4444"}/>
+                  </div>
+                  <div style={{fontSize:10,color:"#1a1a2a",marginBottom:7}}>{u.phone} · Joined {u.joinDate}</div>
+                  <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                    {p&&<Badge l={`${p.icon} ${p.label}`} c={p.color}/>}
+                    <Badge l={`Code: ${u.referralCode}`} c="#a78bfa"/>
+                    <Badge l={`₨${u.balance.toLocaleString()}`} c={u.balance>0?"#b48408":"#2a2a4a"}/>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function App(){
+  const [screen,setScreen]=useState("splash");
+  const [userId,setUserId]=useState(null);
+  const [toastData,setToastData]=useState(null);
+  const [tick,setTick]=useState(0);
+  const showToast=(msg,type="info")=>setToastData({msg,type});
+  const refresh=()=>setTick(t=>t+1);
+
+  const handleLogin=id=>{
+    setUserId(id);
+    const u=DB.users[id];
+    setScreen(u.role==="admin"?"admin":!u.depositDone?"pending":"dashboard");
+  };
+  const handleLogout=()=>{setUserId(null);setScreen("auth");};
+  const user=userId?DB.users[userId]:null;
+
+  return(
+    <div style={{background:"#050508",minHeight:"100vh"}}>
+      <div style={{maxWidth:440,margin:"0 auto",minHeight:"100vh"}}>
+        {toastData&&<Toast msg={toastData.msg} type={toastData.type} onClose={()=>setToastData(null)}/>}
+        {screen==="splash"&&<Splash onDone={()=>setScreen("auth")}/>}
+        {screen==="auth"&&<Auth onLogin={handleLogin} toast={showToast}/>}
+        {(screen==="dashboard"||screen==="pending")&&user&&(
+          <UserDash key={tick} userId={userId} onLogout={handleLogout}
+            onDeposit={()=>setScreen("deposit")}
+            onWithdraw={()=>setScreen("withdraw")}
+            onTasks={()=>setScreen("tasks")}
+            toast={showToast}/>
+        )}
+        {screen==="deposit"&&user&&(
+          <Deposit userId={userId}
+            onBack={()=>setScreen(user.depositDone?"dashboard":"pending")}
+            onDone={()=>{refresh();setScreen("pending");}}
+            toast={showToast}/>
+        )}
+        {screen==="withdraw"&&user&&(
+          <Withdraw userId={userId}
+            onBack={()=>setScreen("dashboard")}
+            toast={showToast} refresh={refresh}/>
+        )}
+        {screen==="tasks"&&user&&(
+          <TasksScreen userId={userId}
+            onBack={()=>setScreen("dashboard")}
+            toast={showToast} refresh={refresh}/>
+        )}
+        {screen==="admin"&&<AdminPanel key={tick} onLogout={handleLogout} toast={showToast}/>}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
 </html>
