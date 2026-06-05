@@ -1,1 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>RefPay - Global Earning Network</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%231a1000' stroke='%23c9a84c' stroke-width='4'/><text x='50' y='65' text-anchor='middle' font-family='Georgia,serif' font-weight='900' font-size='44' fill='%23f5d380'>RP</text></svg>"/>
+<meta name="theme-color" content="#04030a"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js" crossorigin></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#c9a84c;--gold2:#f5d380;--gold3:#8b6914;--gold-glow:#c9a84c55;
+  --black:#04030a;--black2:#080712;--black3:#0d0b1a;--black4:#12101f;
+  --text:#e8dfc0;--text2:#9b8e68;--text3:#4a4230;
+  --border:#c9a84c18;--border2:#c9a84c33;
+  --red:#c0392b;--green:#27ae60;--blue:#2980b9;
+}
+body{background:var(--black);font-family:'Rajdhani',sans-serif;color:var(--text);overflow-x:hidden;min-height:100vh}
+input,textarea,select{font-family:'Rajdhani',sans-serif}
+input::placeholder,textarea::placeholder{color:var(--text3)}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--gold)!important;box-shadow:0 0 0 3px var(--gold-glow)!important}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:var(--black2)}
+::-webkit-scrollbar-thumb{background:var(--gold3);border-radius:4px}
 
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes glow{0%,100%{box-shadow:0 0 20px var(--gold-glow)}50%{box-shadow:0 0 50px #c9a84c88,0 0 80px #c9a84c33}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes rain{0%{transform:translateY(-30px);opacity:0}5%{opacity:.6}90%{opacity:.2}100%{transform:translateY(110vh);opacity:0}}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:.9}}
+@keyframes toast{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes coinSpin{0%{transform:rotateY(0)}100%{transform:rotateY(720deg)}}
+@keyframes scanline{0%{transform:translateY(-100%)}100%{transform:translateY(100vh)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+@keyframes numberPop{0%{transform:scale(1)}50%{transform:scale(1.18)}100%{transform:scale(1)}}
+
+.press:active{transform:scale(.95)!important;filter:brightness(1.2)}
+.card-hover{transition:all .3s cubic-bezier(.34,1.56,.64,1)}
+.card-hover:hover{transform:translateY(-3px);box-shadow:0 8px 32px var(--gold-glow)}
+.step-row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #c9a84c0a}
+.step-row:last-child{border-bottom:none}
+
+#loading-screen{position:fixed;inset:0;background:#04030a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;transition:opacity .5s ease}
+#loading-screen.hidden{opacity:0;pointer-events:none}
+.loading-logo{font-size:52px;font-family:'Cinzel',serif;font-weight:900;background:linear-gradient(135deg,#f5d380,#c9a84c,#8b6914);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:6px;margin-bottom:8px}
+.loading-sub{font-size:10px;color:#3a3020;letter-spacing:5px;text-transform:uppercase;font-family:'Orbitron',monospace;margin-bottom:32px}
+.loading-bar{width:180px;height:2px;background:#1e1a30;border-radius:1px;overflow:hidden}
+.loading-bar-inner{height:100%;background:linear-gradient(90deg,transparent,#c9a84c,#f5d380,#c9a84c,transparent);background-size:300%;animation:shimmer 1.5s ease-in-out infinite;border-radius:1px}
+</style>
+</head>
+<body>
+<div id="loading-screen">
+  <div class="loading-logo">RefPay</div>
+  <div class="loading-sub">Global Earning Network</div>
+  <div class="loading-bar"><div class="loading-bar-inner"></div></div>
+</div>
+<div id="root"></div>
+<script>
+window.__hideLoading=function(){var el=document.getElementById('loading-screen');if(el){el.classList.add('hidden');setTimeout(function(){el.style.display='none';},600);}};
+window.onerror=function(msg){var el=document.getElementById('loading-screen');if(el)el.innerHTML='<div style="color:#c0392b;padding:28px;text-align:center;font-family:monospace;font-size:13px;max-width:340px"><div style="font-size:32px;margin-bottom:12px">⚠️</div><div style="color:#f5d380;font-weight:700;margin-bottom:8px">App Error</div><div style="color:#7a6830">'+msg+'</div></div>';return false;};
+function uid(){return'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+</script>
+<script type="text/babel">
+const{useState,useEffect,useRef,useCallback}=React;
+
+// ── AUDIO ──
+let _ctx=null;
+function getCtx(){if(!_ctx||_ctx.state==="closed"){try{_ctx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){return null;}}return _ctx;}
+function playTone(f,t="sine",d=0.12,v=0.12,dl=0){const c=getCtx();if(!c)return;const o=c.createOscillator(),g=c.createGain(),comp=c.createDynamicsCompressor();comp.threshold.value=-18;comp.knee.value=10;comp.ratio.value=4;o.connect(g);g.connect(comp);comp.connect(c.destination);o.type=t;o.frequency.setValueAtTime(f,c.currentTime+dl);o.frequency.exponentialRampToValueAtTime(f*.85,c.currentTime+dl+d);g.gain.setValueAtTime(0,c.currentTime+dl);g.gain.linearRampToValueAtTime(v,c.currentTime+dl+.01);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+dl+d+.05);o.start(c.currentTime+dl);o.stop(c.currentTime+dl+d+.1);}
+function playCoin(){[[660,0],[880,.06],[1100,.12],[1320,.18]].forEach(([f,d])=>playTone(f,"sine",.18,.10,d));}
+function playClick(){playTone(440,"sine",.06,.07);playTone(660,"sine",.04,.04,.04);}
+function playSuccess(){[[523,0],[659,.1],[784,.2],[1047,.32]].forEach(([f,d])=>playTone(f,"sine",.22,.12,d));}
+function playError(){playTone(200,"sawtooth",.15,.08);playTone(160,"sawtooth",.15,.06,.1);}
+
+// ── CONSTANTS ──
+const PLANS=[
+  {amount:500,split:250,label:"Starter",color:"#a78bfa",icon:"⚡",desc:"Begin your journey"},
+  {amount:1000,split:500,label:"Basic",color:"#c9a84c",icon:"🥉",desc:"Most popular"},
+  {amount:2000,split:1000,label:"Silver",color:"#94a3b8",icon:"🥈",desc:"Double earnings"},
+  {amount:3000,split:1500,label:"Gold",color:"#f5c842",icon:"👑",desc:"Serious earners"},
+  {amount:4000,split:2000,label:"Platinum",color:"#7dd3fc",icon:"💎",desc:"Premium tier"},
+  {amount:5000,split:2500,label:"Diamond",color:"#86efac",icon:"💠",desc:"Maximum potential"},
+];
+const MIN_WITHDRAW=500;
+const ADMIN_PHONE="03331942804";
+const ADMIN_PASSWORD="9Xflix.com.refpay";
+
+const REAL_ADS=[
+  {id:"ad1",title:"Meezan Bank Digital Account",desc:"Open your account online in 5 minutes. Earn profit monthly. Pakistan's #1 Islamic bank.",brand:"Meezan Bank",reward:5,color:"#27ae60",bg:"#0a1f0d",border:"#27ae6033",logo:"🏦",tag:"Finance"},
+  {id:"ad2",title:"Jazz World Super Offer",desc:"Get 10GB data + 1000 minutes for just Rs.199/month.",brand:"Jazz Pakistan",reward:5,color:"#c0392b",bg:"#1f0a0a",border:"#c0392b33",logo:"📡",tag:"Telecom"},
+  {id:"ad3",title:"Daraz Mega Sale - Up to 70% Off",desc:"Electronics, fashion, home appliances. Shop now and get same-day delivery.",brand:"Daraz.pk",reward:5,color:"#e67e22",bg:"#1f120a",border:"#e67e2233",logo:"🛍️",tag:"Shopping"},
+  {id:"ad4",title:"HBL PayConnect - Zero Fees",desc:"Send money to any bank account instantly. Zero transfer fees all month.",brand:"HBL Bank",reward:5,color:"#2980b9",bg:"#0a0f1f",border:"#2980b933",logo:"💳",tag:"Banking"},
+  {id:"ad5",title:"CarFirst - Sell in 60 Minutes",desc:"Sell your car at best market price. Inspection at your doorstep.",brand:"CarFirst",reward:5,color:"#8e44ad",bg:"#130a1f",border:"#8e44ad33",logo:"🚗",tag:"Automotive"},
+  {id:"ad6",title:"Zameen.com - Dream Homes",desc:"2 million+ property listings. Find your property today.",brand:"Zameen.com",reward:5,color:"#c9a84c",bg:"#1a1400",border:"#c9a84c33",logo:"🏠",tag:"Real Estate"},
+  {id:"ad7",title:"DrugsBank - Online Pharmacy",desc:"Order genuine medicines at your doorstep. Free delivery on orders above Rs.500.",brand:"DrugsBank PK",reward:5,color:"#1abc9c",bg:"#0a1a16",border:"#1abc9c33",logo:"💊",tag:"Health"},
+  {id:"ad8",title:"Sabaq Foundation - Free Education",desc:"10,000+ free video lectures for matric to university level.",brand:"Sabaq.pk",reward:5,color:"#f39c12",bg:"#1a1000",border:"#f39c1233",logo:"📚",tag:"Education"},
+  {id:"ad9",title:"Foodpanda - Rs.100 Off",desc:"Get Rs.100 discount on your first 3 orders. 1000+ restaurants near you.",brand:"Foodpanda",reward:5,color:"#e91e8c",bg:"#1f0a14",border:"#e91e8c33",logo:"🍕",tag:"Food"},
+  {id:"ad10",title:"Nayatel Fiber Internet",desc:"100Mbps fiber optic internet at Rs.999/month. No data cap.",brand:"Nayatel",reward:5,color:"#00bcd4",bg:"#0a1a1f",border:"#00bcd433",logo:"☁️",tag:"Internet"},
+];
+
+const FAKE_WITHDRAWALS=[
+  {name:"Ahmed K.",amount:1000},{name:"Sara M.",amount:500},{name:"Bilal R.",amount:5000},
+  {name:"Zara N.",amount:1000},{name:"Usman T.",amount:2000},{name:"Hina F.",amount:500},
+  {name:"Kamran A.",amount:3000},{name:"Nadia S.",amount:1000},{name:"Faisal H.",amount:5000},
+  {name:"Ayesha Q.",amount:500},{name:"Tariq B.",amount:2000},{name:"Maryam L.",amount:1000},
+  {name:"Hamza R.",amount:3000},{name:"Sana K.",amount:1500},{name:"Omar F.",amount:5000},
+  {name:"Waqas M.",amount:5000},{name:"Noreen A.",amount:1000},{name:"Asad J.",amount:2000},
+  {name:"Danish K.",amount:3000},{name:"Aisha R.",amount:1500},{name:"Rana K.",amount:2000},
+];
+
+// ── DB ──
+const LS_KEY="refpay_db_v4";
+function saveDB(){try{localStorage.setItem(LS_KEY,JSON.stringify({users:DB.users,transactions:DB.transactions,withdrawals:DB.withdrawals,tasks:DB.tasks,taskSubmissions:DB.taskSubmissions,adViews:DB.adViews,settings:DB.settings,announcements:DB.announcements}));}catch(e){}}
+function loadDB(){try{const raw=localStorage.getItem(LS_KEY);if(!raw)return false;const d=JSON.parse(raw);const ab={...DB.users.ADMIN};Object.assign(DB,d);DB.users.ADMIN={...ab,...(d.users&&d.users.ADMIN?{balance:d.users.ADMIN.balance,totalEarned:d.users.ADMIN.totalEarned}:{})};return true;}catch(e){return false;}}
+function dbSave(){saveDB();}
+
+const _loginAttempts={};const _lockUntil={};
+function recordLoginAttempt(p){const now=Date.now();if(!_loginAttempts[p])_loginAttempts[p]={count:0,first:now};const a=_loginAttempts[p];if(now-a.first>15*60*1000){a.count=0;a.first=now;}a.count++;if(a.count>=5){_lockUntil[p]=now+5*60*1000;a.count=0;a.first=now;}}
+function isLocked(p){if(!_lockUntil[p])return false;if(Date.now()<_lockUntil[p])return true;delete _lockUntil[p];return false;}
+function getLockRemaining(p){if(!_lockUntil[p])return 0;return Math.ceil((_lockUntil[p]-Date.now())/1000);}
+function tid(){return"T"+Date.now().toString(36).toUpperCase();}
+function mkCode(n){const letters="ABCDEFGHJKLMNPQRSTUVWXYZ";const prefix=(n||"USR").slice(0,3).toUpperCase().replace(/[^A-Z]/g,"X");return prefix+Math.floor(1000+Math.random()*9000);}
+function getPlan(a){return PLANS.find(p=>p.amount===Number(a))||PLANS[0];}
+function toUSD(pkr){return(pkr/278).toFixed(2);}
+
+const DB={
+  users:{ADMIN:{id:"ADMIN",name:"Admin",phone:ADMIN_PHONE,password:ADMIN_PASSWORD,role:"admin",balance:0,totalEarned:0,referralCode:"REFPAY2025",referredBy:null,depositDone:true,canRefer:true,joinDate:"2025-01-01",transactions:[],withdrawals:[],adsWatched:0,adsEarned:0}},
+  transactions:[],withdrawals:[],tasks:[],taskSubmissions:[],adViews:[],
+  settings:{adminEasypaisa:ADMIN_PHONE,adminJazzcash:"03001234567",adminBank:{name:"Meezan Bank",account:"01234567890123",title:"RefPay Admin"},adminBinance:{uid:"123456789",name:"RefPay Official"},adsEnabled:true,adsPerSession:10,adsRewardPercent:1},
+  announcements:[
+    {id:"ann0",type:"roadmap",title:"🗺️ How to Earn on RefPay",steps:["Register your account with a valid referral code","Make your first deposit (PKR 500 – 5000) to activate","Share YOUR referral code with friends & family","Earn PKR when your referrals deposit and activate","Watch 10 ads daily for bonus PKR earnings","Complete tasks for extra commissions","Withdraw anytime when balance ≥ PKR 500"],date:"Always Active",color:"#c9a84c"},
+    {id:"ann1",type:"gift",title:"🎁 Weekly Bonus – Top 3 Earners",desc:"Top 3 earners this week receive special bonus rewards every Sunday. Stay active, refer more!",date:"Every Sunday",color:"#f5c842"},
+    {id:"ann2",type:"feature",title:"📺 1% Passive Ads Bonus",desc:"When someone you referred watches ads, you automatically earn 1% of their ad reward! Passive income every day.",date:"Active Now",color:"#27ae60"},
+    {id:"ann3",type:"coming",title:"🚀 RefPay Pro Plan – Coming Soon",desc:"Advanced analytics, priority withdrawals & VIP support. Coming soon for Diamond members.",date:"Q3 2025",color:"#a78bfa"},
+    {id:"ann4",type:"security",title:"🔐 Your Account is Protected",desc:"RefPay uses encrypted sessions. Never share your password. Admin will NEVER ask for your password via chat.",date:"Always",color:"#e74c3c"},
+  ],
+};
+loadDB();
+
+// ── PARTICLES ──
+function Particles(){
+  const shapes=["◆","✦","●","◇","✧","▸","⬡","◉","$","₨"];
+  const colors=["#c9a84c22","#f5d38018","#8b691415","#c9a84c10"];
+  const p=Array.from({length:18},(_,i)=>({id:i,s:shapes[i%shapes.length],l:`${i*5.5+Math.random()*3}%`,del:`${Math.random()*15}s`,dur:`${12+Math.random()*10}s`,sz:`${9+Math.random()*8}px`,op:0.02+Math.random()*.05,c:colors[i%colors.length]}));
+  return(
+    <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,overflow:"hidden"}}>
+      {p.map(d=><div key={d.id} style={{position:"absolute",left:d.l,top:"-30px",fontSize:d.sz,color:d.c,opacity:d.op,animation:`rain ${d.dur} ${d.del} linear infinite`}}>{d.s}</div>)}
+      <div style={{position:"fixed",top:0,left:0,right:0,height:"1.5px",background:"linear-gradient(90deg,transparent,#c9a84c33,transparent)",animation:"scanline 8s linear infinite",pointerEvents:"none"}}/>
+    </div>
+  );
+}
+
+// ── LOGO ──
+function RPLogo({size=1}){
+  const s=28*size;
+  return(
+    <svg width={s} height={s} viewBox="0 0 100 100" style={{filter:"drop-shadow(0 0 8px #c9a84c)",flexShrink:0}}>
+      <defs>
+        <linearGradient id="rpg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f5d380"/><stop offset="50%" stopColor="#c9a84c"/><stop offset="100%" stopColor="#8b6914"/></linearGradient>
+        <linearGradient id="rpg2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#1a1000"/><stop offset="100%" stopColor="#3d2c00"/></linearGradient>
+      </defs>
+      <circle cx="50" cy="50" r="48" fill="url(#rpg2)" stroke="url(#rpg)" strokeWidth="3"/>
+      <circle cx="50" cy="50" r="40" fill="none" stroke="#c9a84c22" strokeWidth="1"/>
+      <text x="50" y="64" textAnchor="middle" fontFamily="Georgia,serif" fontWeight="900" fontSize="44" fill="url(#rpg)">RP</text>
+      <circle cx="72" cy="28" r="8" fill="url(#rpg)" opacity="0.9"/>
+    </svg>
+  );
+}
+function Logo({size=1}){
+  return(
+    <div style={{display:"flex",alignItems:"center",gap:10*size}}>
+      <div style={{position:"relative",width:48*size,height:48*size}}>
+        <div style={{position:"absolute",inset:0,borderRadius:14*size,background:"linear-gradient(135deg,#1a1000,#3d2c00,#1a1000)",border:"2px solid #c9a84c44",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 0 24px #c9a84c33,inset 0 1px 0 #c9a84c22",overflow:"hidden"}}>
+          <div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 30% 30%,#c9a84c18,transparent 60%)"}}/>
+          <RPLogo size={size}/>
+        </div>
+        <div style={{position:"absolute",top:-2,right:-2,width:12*size,height:12*size,borderRadius:"50%",background:"linear-gradient(135deg,#f5d380,#c9a84c)",border:"2px solid var(--black)",animation:"pulse 2s ease-in-out infinite",boxShadow:"0 0 8px #c9a84c"}}/>
+      </div>
+      <div>
+        <div style={{fontSize:26*size,fontWeight:900,fontFamily:"'Cinzel',serif",letterSpacing:2,background:"linear-gradient(135deg,#f5d380 0%,#c9a84c 40%,#8b6914 70%,#f5d380 100%)",backgroundSize:"300%",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",animation:"shimmer 5s linear infinite",lineHeight:1}}>RefPay</div>
+        {size>=1&&<div style={{fontSize:7,color:"#4a4230",letterSpacing:4,textTransform:"uppercase",marginTop:2,fontWeight:600,fontFamily:"'Orbitron',monospace"}}>Global Earning Network</div>}
+      </div>
+    </div>
+  );
+}
+
+// ── TOAST ──
+function Toast({msg,type,onClose}){
+  useEffect(()=>{const t=setTimeout(onClose,3500);return()=>clearTimeout(t);},[]);
+  const colors={success:"#27ae60",error:"#c0392b",info:"#c9a84c",warning:"#f39c12"};
+  const c=colors[type]||"#c9a84c";
+  const icons={success:"✦",error:"✕",info:"◆",warning:"⚠"};
+  return <div style={{position:"fixed",bottom:32,left:"50%",transform:"translateX(-50%)",background:"linear-gradient(135deg,#0d0b1a,#12101f)",border:`1px solid ${c}55`,color:c,padding:"14px 28px",borderRadius:50,fontWeight:700,fontSize:13,zIndex:9999,whiteSpace:"nowrap",boxShadow:`0 8px 40px ${c}30,0 0 0 1px ${c}11`,animation:"toast .3s cubic-bezier(.34,1.56,.64,1)",letterSpacing:.5}}>{icons[type]||"◆"} {msg}</div>;
+}
+
+// ── WITHDRAW TICKER ──
+function WithdrawTicker(){
+  const[idx,setIdx]=useState(0);const[key,setKey]=useState(0);
+  useEffect(()=>{const t=setInterval(()=>{setIdx(i=>(i+1)%FAKE_WITHDRAWALS.length);setKey(k=>k+1);},3500);return()=>clearInterval(t);},[]);
+  const w=FAKE_WITHDRAWALS[idx];
+  return(
+    <div style={{background:"linear-gradient(90deg,#0a0800,#110f00,#0a0800)",borderTop:"1px solid #c9a84c18",borderBottom:"1px solid #c9a84c18",padding:"7px 0",overflow:"hidden"}}>
+      <div key={key} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,animation:"fadeIn .5s ease"}}>
+        <span style={{width:6,height:6,borderRadius:"50%",background:"#27ae60",display:"inline-block",boxShadow:"0 0 8px #27ae60",flexShrink:0}}/>
+        <span style={{fontSize:11,color:"#7a6830",fontFamily:"'Rajdhani',sans-serif",fontWeight:500}}>
+          <span style={{color:"#c9a84c",fontWeight:700}}>{w.name}</span>{" withdrew "}
+          <span style={{color:"#f5d380",fontWeight:800}}>PKR {w.amount.toLocaleString()}</span>
+        </span>
+        <span style={{fontSize:9,color:"#27ae60",fontWeight:700,background:"#27ae6015",borderRadius:20,padding:"2px 8px",border:"1px solid #27ae6033"}}>PAID ✓</span>
+      </div>
+    </div>
+  );
+}
+
+// ── BTN ──
+function Btn({ch,onClick,v="primary",disabled=false,s={}}){
+  const handle=()=>{if(!disabled){playCoin();if(onClick)onClick();}};
+  const variants={
+    primary:{background:"linear-gradient(135deg,#1a1000,#3d2c00,#c9a84c,#f5d380,#c9a84c,#3d2c00)",backgroundSize:"300%",animation:"shimmer 4s linear infinite",color:"#0a0800",border:"none",boxShadow:"0 4px 20px #c9a84c40"},
+    gold:{background:"linear-gradient(135deg,#8b6914,#c9a84c,#f5d380,#c9a84c)",backgroundSize:"200%",animation:"shimmer 3s linear infinite",color:"#0a0600",border:"none",boxShadow:"0 4px 24px #c9a84c50"},
+    green:{background:"linear-gradient(135deg,#0a2a0f,#145a1e,#27ae60)",color:"#d4edda",border:"1px solid #27ae6033"},
+    red:{background:"linear-gradient(135deg,#2a0a0a,#5a1414,#c0392b)",color:"#ffd0cc",border:"1px solid #c0392b33"},
+    ghost:{background:"transparent",border:"1px solid #c9a84c33",color:"#c9a84c"},
+    dark:{background:"#0d0b1a",border:"1px solid #1e1a30",color:"#4a4230"},
+  };
+  const vv=variants[v]||variants.primary;
+  return <button className="press" onClick={handle} disabled={disabled} style={{...vv,padding:"14px 20px",width:"100%",borderRadius:12,fontWeight:700,fontSize:14,cursor:disabled?"not-allowed":"pointer",opacity:disabled?.4:1,transition:"all .2s",letterSpacing:1,fontFamily:"'Rajdhani',sans-serif",...s}}>{ch}</button>;
+}
+
+// ── INP ──
+function Inp({label,value,onChange,type="text",placeholder,hint,rows,required}){
+  return(
+    <div style={{marginBottom:16}}>
+      {label&&<div style={{fontSize:10,fontWeight:700,color:"#4a4230",marginBottom:6,letterSpacing:2,textTransform:"uppercase",fontFamily:"'Orbitron',monospace"}}>{label}{required&&<span style={{color:"#c0392b",marginLeft:3}}>*</span>}</div>}
+      {rows
+        ?<textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows} style={{width:"100%",background:"#080712",border:"1.5px solid #1e1a30",borderRadius:10,padding:"13px 15px",color:"#e8dfc0",fontSize:14,resize:"vertical",transition:"all .2s"}}/>
+        :<input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={{width:"100%",background:"#080712",border:"1.5px solid #1e1a30",borderRadius:10,padding:"13px 15px",color:"#e8dfc0",fontSize:14,transition:"all .2s"}}/>
+      }
+      {hint&&<div style={{fontSize:11,color:"#3a3020",marginTop:5,lineHeight:1.5}}>{hint}</div>}
+    </div>
+  );
+}
+
+// ── CARD ──
+function Card({children,glow=false,color="#c9a84c",s={}}){
+  return <div className="card-hover" style={{background:"linear-gradient(135deg,#0d0b1a,#12101f)",border:`1px solid ${glow?color+"44":"#1e1a30"}`,borderRadius:18,padding:18,boxShadow:glow?`0 0 32px ${color}18,inset 0 1px 0 ${color}11`:"inset 0 1px 0 #ffffff05",...s}}>{children}</div>;
+}
+
+// ── BADGE ──
+function Badge({l,c="#c9a84c"}){
+  return <span style={{background:c+"18",color:c,borderRadius:20,padding:"3px 11px",fontSize:10,fontWeight:700,border:`1px solid ${c}33`,letterSpacing:.5}}>{l}</span>;
+}
+
+// ── STATS BAR ──
+function StatsBar(){
+  const totalUsers=Object.values(DB.users).filter(u=>u.role!=="admin").length;
+  const active=Object.values(DB.users).filter(u=>u.role!=="admin"&&u.depositDone).length;
+  return(
+    <div style={{background:"linear-gradient(135deg,#0a0800,#100e00)",border:"1px solid #c9a84c22",borderRadius:16,padding:14,marginBottom:14}}>
+      <div style={{fontSize:9,fontWeight:700,color:"#3a3020",letterSpacing:3,textTransform:"uppercase",marginBottom:11,fontFamily:"'Orbitron',monospace"}}>◆ Live Platform Stats</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+        {[{l:"Members",v:totalUsers+1200,c:"#c9a84c",i:"👥"},{l:"Active",v:active+870,c:"#27ae60",i:"✦"},{l:"Withdrawals",v:"PKR "+DB.withdrawals.filter(w=>w.status==="approved").reduce((s,w)=>s+w.amount,0).toLocaleString()||"0",c:"#f5d380",i:"💸"}].map(ss=>(
+          <div key={ss.l} style={{background:"#0a0800",border:"1px solid #c9a84c18",borderRadius:11,padding:"11px 8px",textAlign:"center"}}>
+            <div style={{fontSize:16,marginBottom:3}}>{ss.i}</div>
+            <div style={{fontSize:ss.l==="Withdrawals"?11:20,fontWeight:900,color:ss.c,fontFamily:"'Orbitron',monospace",wordBreak:"break-all"}}>{ss.v}</div>
+            <div style={{fontSize:8,color:"#3a3020",marginTop:2,letterSpacing:1,fontWeight:700,fontFamily:"'Orbitron',monospace"}}>{ss.l.toUpperCase()}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── HOW IT WORKS (Roadmap) ──
+function HowItWorks(){
+  const steps=[
+    {n:"01",icon:"📝",title:"Register Account",desc:"Sign up with a valid referral code from an active member"},
+    {n:"02",icon:"💳",title:"Make First Deposit",desc:"Deposit PKR 500–5000 to activate your account & referral code"},
+    {n:"03",icon:"🔗",title:"Share Your Code",desc:"Share your unique referral code with friends & family"},
+    {n:"04",icon:"💰",title:"Earn Per Referral",desc:"Get PKR every time your referral activates (50/50 split)"},
+    {n:"05",icon:"📺",title:"Watch Daily Ads",desc:"Watch 10 ads per day for guaranteed bonus PKR earnings"},
+    {n:"06",icon:"🎯",title:"Complete Tasks",desc:"Earn extra commissions by completing platform tasks"},
+    {n:"07",icon:"🏧",title:"Withdraw Anytime",desc:"Withdraw whenever balance ≥ PKR 500 via EasyPaisa, JazzCash, Bank or Binance"},
+  ];
+  return(
+    <div style={{background:"linear-gradient(135deg,#0a0800,#1a1200)",border:"1px solid #c9a84c22",borderRadius:20,padding:"18px 16px",marginBottom:16}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+        <div style={{width:32,height:32,borderRadius:10,background:"#c9a84c18",border:"1px solid #c9a84c33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>🗺️</div>
+        <div>
+          <div style={{fontSize:14,fontWeight:900,color:"#f5d380",fontFamily:"'Cinzel',serif"}}>How to Earn on RefPay</div>
+          <div style={{fontSize:10,color:"#4a4230"}}>Step-by-step guide for new members</div>
+        </div>
+      </div>
+      {steps.map((step,i)=>(
+        <div key={step.n} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"10px 0",borderBottom:i<steps.length-1?"1px solid #c9a84c0a":"none",animation:`slideIn .3s ease ${i*.05}s both`}}>
+          <div style={{width:36,height:36,borderRadius:10,background:`linear-gradient(135deg,#1a1000,#3d2c00)`,border:"1.5px solid #c9a84c33",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <div style={{fontSize:7,fontWeight:900,color:"#8b6914",fontFamily:"'Orbitron',monospace",lineHeight:1}}>{step.n}</div>
+            <div style={{fontSize:14,lineHeight:1}}>{step.icon}</div>
+          </div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,fontWeight:800,color:"#c9a84c",fontFamily:"'Rajdhani',sans-serif",marginBottom:2}}>{step.title}</div>
+            <div style={{fontSize:11,color:"#4a4230",lineHeight:1.5}}>{step.desc}</div>
+          </div>
+          <div style={{width:18,height:18,borderRadius:"50%",background:i===0?"linear-gradient(135deg,#27ae60,#2ecc71)":"#1e1a30",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,flexShrink:0,marginTop:8}}>
+            {i===0&&<span style={{color:"#fff",fontWeight:900}}>✓</span>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── AGREEMENT ──
+function Agreement({onAccept}){
+  const[checked,setChecked]=useState({c1:false,c2:false,c3:false,c4:false,c5:false,c6:false,c7:false,c8:false});
+  const allChecked=Object.values(checked).every(Boolean);
+  const clauses=[
+    {id:"c1",text:"I confirm that I am voluntarily joining RefPay of my own free will, without any pressure, coercion, or false promises."},
+    {id:"c2",text:"I understand RefPay is a referral-based platform. Earnings depend entirely on my own efforts. No fixed income or salary is guaranteed."},
+    {id:"c3",text:"I acknowledge the admin is not responsible for any losses or failed referrals. All deposits are final and non-refundable once verified."},
+    {id:"c4",text:"I will not create fake accounts, use fake transaction IDs, or manipulate the referral system. Violation results in permanent ban."},
+    {id:"c5",text:"I will not take any legal action against RefPay admin as I am joining voluntarily and understand the platform's nature."},
+    {id:"c6",text:"Withdrawal requests are processed within 1-24 hours. Admin is not liable for delays caused by payment gateway issues."},
+    {id:"c7",text:"RefPay may update terms, plans, or commission structures at any time. Continued use implies acceptance of updated terms."},
+    {id:"c8",text:"All information I provide (name, phone, transaction ID) is accurate. False information will result in account termination without refund."},
+  ];
+  return(
+    <div style={{background:"var(--black)",minHeight:"100vh",position:"relative",overflow:"hidden"}}>
+      <Particles/>
+      <div style={{position:"relative",zIndex:1,padding:"20px 18px 48px",animation:"fadeUp .35s ease"}}>
+        <div style={{textAlign:"center",marginBottom:20}}>
+          <Logo size={1}/>
+          <div style={{marginTop:18,background:"linear-gradient(135deg,#150a00,#0d0b1a)",border:"1px solid #c9a84c22",borderRadius:18,padding:"18px 16px"}}>
+            <div style={{fontSize:32,marginBottom:8,animation:"float 2s ease-in-out infinite"}}>📜</div>
+            <div style={{fontSize:17,fontWeight:900,color:"#f5d380",marginBottom:6,fontFamily:"'Cinzel',serif",letterSpacing:1}}>User Agreement & Terms</div>
+            <div style={{fontSize:12,color:"#4a4230",lineHeight:1.6}}>Read carefully and tick each clause to proceed. Features unlock after you agree.</div>
+          </div>
+        </div>
+        <div style={{background:"#0d0b1a",border:"1px solid #c9a84c18",borderRadius:18,padding:12,marginBottom:16}}>
+          {clauses.map((c,i)=>(
+            <div key={c.id} onClick={()=>{playCoin();setChecked(p=>({...p,[c.id]:!p[c.id]}));}} style={{display:"flex",gap:11,alignItems:"flex-start",padding:"11px 12px",marginBottom:6,borderRadius:12,cursor:"pointer",background:checked[c.id]?"#0a1f0d":"#080712",border:`1.5px solid ${checked[c.id]?"#27ae6033":"#1e1a30"}`,transition:"all .2s"}}>
+              <div style={{width:22,height:22,borderRadius:6,border:`2px solid ${checked[c.id]?"#27ae60":"#2a2a4a"}`,background:checked[c.id]?"#27ae60":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1,transition:"all .2s"}}>
+                {checked[c.id]&&<span style={{color:"#fff",fontSize:12,fontWeight:900}}>✓</span>}
+              </div>
+              <div>
+                <div style={{fontSize:9,fontWeight:700,color:checked[c.id]?"#27ae60":"#3a3020",letterSpacing:2,marginBottom:3,fontFamily:"'Orbitron',monospace"}}>CLAUSE {i+1}</div>
+                <div style={{fontSize:11.5,color:checked[c.id]?"#8abf8a":"#3a3060",lineHeight:1.6}}>{c.text}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{marginBottom:12,background:"#080712",border:"1px solid #c9a84c18",borderRadius:12,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontSize:11,color:"#4a4230",fontFamily:"'Orbitron',monospace"}}>PROGRESS</span>
+          <div style={{display:"flex",gap:4}}>{Object.values(checked).map((v,i)=><div key={i} style={{width:16,height:16,borderRadius:5,background:v?"#27ae60":"#1e1a30",border:`1px solid ${v?"#27ae6044":"#2a2a4a"}`,transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9}}>{v&&"✓"}</div>)}</div>
+          <span style={{fontSize:11,fontWeight:900,color:"#c9a84c",fontFamily:"'Orbitron',monospace"}}>{Object.values(checked).filter(Boolean).length}/8</span>
+        </div>
+        <Btn ch={allChecked?"✦ I Agree — Create My Account":"Accept All Clauses Above ("+Object.values(checked).filter(Boolean).length+"/8)"} v={allChecked?"gold":"dark"} disabled={!allChecked} onClick={onAccept}/>
+      </div>
+    </div>
+  );
+}
+
+// ── SPLASH ──
+function Splash({onDone}){
+  useEffect(()=>{const t=setTimeout(onDone,3000);return()=>clearTimeout(t);},[]);
+  return(
+    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"radial-gradient(ellipse 130% 80% at 50% 10%,#1a1000 0%,#04030a 65%)",position:"relative",overflow:"hidden"}}>
+      <Particles/>
+      <div style={{position:"relative",zIndex:1,textAlign:"center",animation:"fadeUp .9s ease"}}>
+        <div style={{position:"relative",width:160,height:160,margin:"0 auto 36px"}}>
+          <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"2px solid #c9a84c22",animation:"spin 20s linear infinite",borderTopColor:"#c9a84c88"}}/>
+          <div style={{position:"absolute",inset:12,borderRadius:"50%",border:"1px solid #c9a84c11",animation:"spin 14s linear infinite reverse",borderRightColor:"#c9a84c55"}}/>
+          <div style={{position:"absolute",inset:28,borderRadius:"50%",background:"radial-gradient(#1a1000,#04030a)",display:"flex",alignItems:"center",justifyContent:"center",animation:"glow 3s ease-in-out infinite",border:"1px solid #c9a84c33"}}><RPLogo size={1.5}/></div>
+        </div>
+        <div style={{fontSize:56,fontWeight:900,fontFamily:"'Cinzel',serif",background:"linear-gradient(135deg,#f5d380 0%,#c9a84c 40%,#8b6914 70%,#f5d380 100%)",backgroundSize:"300%",animation:"shimmer 4s linear infinite",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:6,lineHeight:1,marginBottom:10}}>RefPay</div>
+        <div style={{fontSize:10,color:"#3a3020",letterSpacing:6,textTransform:"uppercase",marginBottom:8,fontFamily:"'Orbitron',monospace"}}>Global Earning Network</div>
+        <div style={{width:200,height:2,background:"#1e1a30",borderRadius:1,margin:"36px auto 0",overflow:"hidden"}}><div style={{height:"100%",background:"linear-gradient(90deg,transparent,#c9a84c,#f5d380,#c9a84c,transparent)",animation:"shimmer 2.2s ease-in-out infinite",backgroundSize:"300%",borderRadius:1}}/></div>
+        <div style={{fontSize:9,color:"#2a2010",marginTop:10,letterSpacing:4,fontWeight:600,fontFamily:"'Orbitron',monospace"}}>LOADING...</div>
+      </div>
+    </div>
+  );
+}
+
+// ── ADS SCREEN ──
+function AdsScreen({userId,onBack,toast,refresh}){
+  const user=DB.users[userId];
+  const[phase,setPhase]=useState("list");
+  const[currentAd,setCurrentAd]=useState(null);
+  const[timer,setTimer]=useState(15);
+  const[sessionWatched,setSessionWatched]=useState([]);
+  const timerRef=useRef(null);
+
+  const totalAdsPool=DB.transactions.filter(t=>t.status==="approved").reduce((s,t)=>s+t.amount*.01,0);
+  const activeUsers=Object.values(DB.users).filter(u=>u.role!=="admin"&&u.depositDone).length||1;
+  const rewardPerAd=Math.max(5,Math.floor(totalAdsPool/activeUsers/10));
+
+  const watchAd=(ad)=>{
+    if(sessionWatched.includes(ad.id)){toast("Already watched this ad","info");return;}
+    setCurrentAd(ad);setTimer(15);setPhase("watching");
+    timerRef.current=setInterval(()=>{setTimer(t=>{if(t<=1){clearInterval(timerRef.current);completeAd(ad);return 0;}return t-1;});},1000);
+  };
+  const completeAd=(ad)=>{
+    const earn=rewardPerAd;
+    DB.adViews.push({id:tid(),userId,adId:ad.id,earn,date:new Date().toLocaleDateString("en-GB")});
+    DB.users[userId].balance+=earn;DB.users[userId].totalEarned+=earn;
+    DB.users[userId].adsWatched=(DB.users[userId].adsWatched||0)+1;
+    DB.users[userId].adsEarned=(DB.users[userId].adsEarned||0)+earn;
+    const referrerId=DB.users[userId].referrerId;
+    if(referrerId&&DB.users[referrerId]&&DB.users[referrerId].depositDone){const refShare=Math.max(1,Math.floor(earn*0.01));DB.users[referrerId].balance+=refShare;DB.users[referrerId].totalEarned+=refShare;}
+    const nw=[...sessionWatched,ad.id];setSessionWatched(nw);
+    dbSave();playCoin();
+    if(nw.length>=10){setPhase("done");toast(`🎉 All 10 ads watched! Earned PKR ${nw.length*earn}`,"success");}
+    else{setPhase("list");toast(`+PKR ${earn} earned!`,"success");}
+    refresh();
+  };
+  useEffect(()=>()=>clearInterval(timerRef.current),[]);
+  const remaining=REAL_ADS.filter(a=>!sessionWatched.includes(a.id));
+
+  if(phase==="watching"&&currentAd){
+    return(
+      <div style={{background:"var(--black)",minHeight:"100vh",position:"relative",overflow:"hidden"}}>
+        <Particles/>
+        <div style={{position:"relative",zIndex:1,padding:18,paddingBottom:48,animation:"fadeUp .3s ease"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:22}}>
+            <button onClick={()=>{clearInterval(timerRef.current);setPhase("list");}} style={{background:"#0d0b1a",border:"1px solid #1e1a30",color:"#4a4230",borderRadius:10,padding:"9px 14px",cursor:"pointer",fontSize:17}}>←</button>
+            <div style={{fontSize:18,fontWeight:900,color:"#f5d380",fontFamily:"'Cinzel',serif"}}>Watching Ad...</div>
+          </div>
+          <div style={{background:"linear-gradient(135deg,#0a0800,#1a1200)",border:"1px solid #c9a84c33",borderRadius:20,padding:24,marginBottom:16,textAlign:"center",animation:"glow 3s ease-in-out infinite"}}>
+            <div style={{fontSize:60,marginBottom:12,animation:"float 1.5s ease-in-out infinite"}}>{currentAd.logo}</div>
+            <div style={{fontSize:17,fontWeight:900,color:currentAd.color,fontFamily:"'Cinzel',serif",marginBottom:6}}>{currentAd.title}</div>
+            <div style={{fontSize:12,color:"#7a6830",marginBottom:16,lineHeight:1.6}}>{currentAd.desc}</div>
+            <div style={{background:"#080712",borderRadius:12,padding:14,marginBottom:16,border:"1px solid #c9a84c18"}}>
+              <div style={{fontSize:11,color:"#3a3020",marginBottom:6,letterSpacing:2,fontFamily:"'Orbitron',monospace"}}>REWARD FOR WATCHING</div>
+              <div style={{fontSize:32,fontWeight:900,color:"#f5d380",fontFamily:"'Orbitron',monospace"}}>+PKR {rewardPerAd}</div>
+            </div>
+            <div style={{position:"relative",height:8,background:"#1e1a30",borderRadius:4,overflow:"hidden",marginBottom:12}}>
+              <div style={{position:"absolute",left:0,top:0,height:"100%",background:"linear-gradient(90deg,#8b6914,#c9a84c,#f5d380)",borderRadius:4,transition:"width 1s linear",width:`${(15-timer)/15*100}%`}}/>
+            </div>
+            <div style={{fontSize:28,fontWeight:900,color:"#c9a84c",fontFamily:"'Orbitron',monospace"}}>{timer}s</div>
+            <div style={{fontSize:11,color:"#3a3020",marginTop:4}}>Please watch until timer ends</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if(phase==="done"){
+    return(
+      <div style={{background:"var(--black)",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",padding:24,textAlign:"center"}}>
+        <Particles/>
+        <div style={{position:"relative",zIndex:1,animation:"fadeUp .4s ease"}}>
+          <div style={{fontSize:80,marginBottom:20}}>🏆</div>
+          <div style={{fontSize:22,fontWeight:900,color:"#f5d380",fontFamily:"'Cinzel',serif",marginBottom:8}}>Daily Ads Complete!</div>
+          <div style={{fontSize:14,color:"#7a6830",marginBottom:24}}>You've watched all 10 ads for today.</div>
+          <div style={{background:"linear-gradient(135deg,#0a0800,#1a1200)",border:"1px solid #c9a84c33",borderRadius:18,padding:20,marginBottom:24,animation:"glow 3s ease-in-out infinite"}}>
+            <div style={{fontSize:12,color:"#4a4230",letterSpacing:2,marginBottom:8,fontFamily:"'Orbitron',monospace"}}>TODAY'S EARNING</div>
+            <div style={{fontSize:40,fontWeight:900,color:"#f5d380",fontFamily:"'Orbitron',monospace"}}>+PKR {sessionWatched.length*rewardPerAd}</div>
+          </div>
+          <Btn ch="← Back to Dashboard" v="gold" onClick={()=>{playCoin();onBack();}} s={{maxWidth:280,margin:"0 auto"}}/>
+        </div>
+      </div>
+    );
+  }
+  return(
+    <div style={{background:"var(--black)",minHeight:"100vh",position:"relative",overflow:"hidden"}}>
+      <Particles/>
+      <div style={{position:"relative",zIndex:1,padding:18,paddingBottom:48,animation:"fadeUp .3s ease"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
+          <button onClick={onBack} style={{background:"#0d0b1a",border:"1px solid #1e1a30",color:"#4a4230",borderRadius:10,padding:"9px 14px",cursor:"pointer",fontSize:17}}>←</button>
+          <div><div style={{fontSize:20,fontWeight:900,color:"#f5d380",fontFamily:"'Cinzel',serif"}}>Ads Center</div><div style={{fontSize:11,color:"#4a4230"}}>Watch 10 ads daily — earn PKR {rewardPerAd}/ad</div></div>
+        </div>
+        <div style={{background:"linear-gradient(135deg,#0a0800,#1a1200)",border:"1px solid #c9a84c33",borderRadius:18,padding:16,marginBottom:14,animation:"glow 4s ease-in-out infinite"}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+            {[{l:"Watched Today",v:`${sessionWatched.length}/10`,c:"#c9a84c"},{l:"Earned Today",v:`₨${sessionWatched.length*rewardPerAd}`,c:"#f5d380"},{l:"Total Ads",v:DB.users[userId].adsWatched||0,c:"#27ae60"}].map(ss=>(
+              <div key={ss.l} style={{background:"#080712",borderRadius:12,padding:"12px 8px",textAlign:"center",border:"1px solid #c9a84c18"}}>
+                <div style={{fontSize:16,fontWeight:900,color:ss.c,fontFamily:"'Orbitron',monospace"}}>{ss.v}</div>
+                <div style={{fontSize:8,color:"#3a3020",marginTop:3,letterSpacing:.5,fontWeight:700,fontFamily:"'Orbitron',monospace"}}>{ss.l.toUpperCase()}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:5,flexWrap:"wrap",justifyContent:"center",marginTop:12}}>
+            {REAL_ADS.map((ad,i)=>(
+              <div key={ad.id} style={{width:28,height:28,borderRadius:"50%",background:sessionWatched.includes(ad.id)?"linear-gradient(135deg,#27ae60,#2ecc71)":"#1e1a30",border:`2px solid ${sessionWatched.includes(ad.id)?"#27ae6066":"#3a3020"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:sessionWatched.includes(ad.id)?"#fff":"#3a3020",fontFamily:"'Orbitron',monospace",transition:"all .3s"}}>
+                {sessionWatched.includes(ad.id)?"✓":(i+1)}
+              </div>
+            ))}
+          </div>
+        </div>
+        {sessionWatched.length>=10?(
+          <div style={{background:"#0a1f0d",border:"1px solid #27ae6033",borderRadius:16,padding:20,textAlign:"center"}}>
+            <div style={{fontSize:32,marginBottom:8}}>🎉</div>
+            <div style={{fontWeight:900,color:"#27ae60",fontSize:16,marginBottom:4}}>All ads watched for today!</div>
+            <div style={{fontSize:12,color:"#3a6030"}}>Come back tomorrow for more earnings.</div>
+          </div>
+        ):(
+          remaining.map(ad=>(
+            <div key={ad.id} style={{background:ad.bg,border:`1px solid ${ad.border}`,borderRadius:16,padding:14,marginBottom:10,transition:"all .2s"}}>
+              <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:10}}>
+                <div style={{width:52,height:52,borderRadius:14,background:`${ad.color}18`,border:`1.5px solid ${ad.color}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{ad.logo}</div>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                    <div style={{fontWeight:900,fontSize:12,color:ad.color}}>{ad.brand}</div>
+                    <span style={{fontSize:8,background:ad.color+"22",color:ad.color,borderRadius:20,padding:"2px 7px",border:`1px solid ${ad.color}33`,fontWeight:700}}>{ad.tag}</span>
+                  </div>
+                  <div style={{fontSize:12,fontWeight:700,color:"#e8dfc0",marginBottom:3,lineHeight:1.3}}>{ad.title}</div>
+                  <div style={{fontSize:10,color:"#4a4230",lineHeight:1.5}}>{ad.desc}</div>
+                </div>
+                <div style={{textAlign:"right",flexShrink:0}}>
+                  <div style={{fontSize:16,fontWeight:900,color:"#f5d380",fontFamily:"'Orbitron',monospace"}}>+{rewardPerAd}</div>
+                  <div style={{fontSize:8,color:"#3a3020",fontWeight:700,fontFamily:"'Orbitron',monospace"}}>PKR</div>
+                </div>
+              </div>
+              <Btn ch={`▶ Watch Ad (15s) — Earn PKR ${rewardPerAd}`} v="ghost" onClick={()=>watchAd(ad)} s={{fontSize:12,padding:"10px 0",borderColor:ad.color+"44",color:ad.color}}/>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── AUTH ──
+function Auth({onLogin,toast}){
+  const[tab,setTab]=useState("login");
+  const[f,setF]=useState({name:"",phone:"",pw:"",ref:""});
+  const[err,setErr]=useState("");
+  const[showAgreement,setShowAgreement]=useState(false);
+  const set=k=>v=>setF(p=>({...p,[k]:v}));
+
+  const login=()=>{
+    setErr("");
+    if(isLocked(f.phone)){setErr(`Too many attempts. Try again in ${getLockRemaining(f.phone)}s`);return;}
+    if(f.phone===ADMIN_PHONE&&f.pw===ADMIN_PASSWORD){playCoin();onLogin("ADMIN");return;}
+    const u=Object.values(DB.users).find(u=>u.phone===f.phone&&u.password===f.pw);
+    if(!u){recordLoginAttempt(f.phone);setErr("Invalid phone or password.");return;}
+    playCoin();onLogin(u.id);
+  };
+  const attemptRegister=()=>{
+    setErr("");
+    if(!f.name||!f.phone||!f.pw){setErr("All fields are required.");return;}
+    if(f.phone.length<10){setErr("Valid phone number required.");return;}
+    if(Object.values(DB.users).find(u=>u.phone===f.phone)){setErr("This number is already registered.");return;}
+    if(!f.ref){setErr("A referral code is required to join.");return;}
+    const ref=Object.values(DB.users).find(u=>u.referralCode===f.ref.toUpperCase());
+    if(!ref){setErr("Invalid referral code.");return;}
+    if(!ref.depositDone&&ref.role!=="admin"){setErr("This referral code is not yet active.");return;}
+    setShowAgreement(true);
+  };
+  const completeRegister=()=>{
+    const ref=Object.values(DB.users).find(u=>u.referralCode===f.ref.toUpperCase());
+    const id=uid();const code=mkCode(f.name);
+    DB.users[id]={id,name:f.name,phone:f.phone,password:f.pw,role:"user",balance:0,totalEarned:0,referralCode:code,referredBy:f.ref.toUpperCase(),referrerId:ref.id,depositDone:false,canRefer:false,joinDate:new Date().toLocaleDateString("en-GB"),transactions:[],withdrawals:[],adsWatched:0,adsEarned:0,agreedToTerms:true,agreedAt:new Date().toISOString()};
+    dbSave();toast("Account created! Complete deposit to activate.","success");
+    playCoin();onLogin(id);
+  };
+
+  if(showAgreement) return <Agreement onAccept={completeRegister}/>;
+
+  return(
+    <div style={{minHeight:"100vh",background:"var(--black)",position:"relative",overflow:"hidden"}}>
+      <Particles/>
+      <WithdrawTicker/>
+      <div style={{position:"relative",zIndex:1}}>
+        <div style={{background:"radial-gradient(ellipse 160% 60% at 50% 0%,#1a1000 0%,transparent 70%)",padding:"36px 20px 20px",textAlign:"center"}}>
+          <Logo size={1}/>
+          <div style={{marginTop:16,fontSize:26,fontWeight:900,fontFamily:"'Cinzel',serif",color:"#fff",lineHeight:1.3,letterSpacing:1}}>
+            Earn Referrals.<br/>
+            <span style={{background:"linear-gradient(135deg,#f5d380,#c9a84c,#8b6914)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Get Paid Instantly.</span>
+          </div>
+        </div>
+        <div style={{padding:"0 18px 48px"}}>
+          <StatsBar/>
+          {/* HOW IT WORKS on auth page */}
+          <HowItWorks/>
+          <div style={{display:"flex",background:"#0d0b1a",border:"1px solid #1e1a30",borderRadius:14,padding:4,marginBottom:18}}>
+            {["login","register"].map(t=>(
+              <button key={t} onClick={()=>{playCoin();setTab(t);setErr("");}} style={{flex:1,padding:"11px 0",borderRadius:11,background:tab===t?"linear-gradient(135deg,#3d2c00,#c9a84c,#8b6914)":"transparent",color:tab===t?"#0a0800":"#4a4230",border:"none",fontWeight:800,fontSize:12,cursor:"pointer",letterSpacing:1,fontFamily:"'Rajdhani',sans-serif",transition:"all .2s"}}>
+                {t==="login"?"Sign In":"Create Account"}
+              </button>
+            ))}
+          </div>
+          <div style={{background:"linear-gradient(135deg,#0d0b1a,#12101f)",border:"1px solid #c9a84c22",borderRadius:18,padding:22,marginBottom:14,animation:"fadeUp .4s ease"}}>
+            {tab==="register"&&<Inp label="Full Name" value={f.name} onChange={set("name")} placeholder="John Smith" required/>}
+            <Inp label="Phone Number" value={f.phone} onChange={set("phone")} placeholder="+923XXXXXXXXX" type="tel" required/>
+            <Inp label="Password" value={f.pw} onChange={set("pw")} placeholder="Create a strong password" type="password" required/>
+            {tab==="register"&&<Inp label="Referral Code" value={f.ref} onChange={set("ref")} placeholder="Enter referral code from sponsor" hint="⚠ Valid referral code from an active member is mandatory" required/>}
+            {err&&<div style={{background:"#150606",border:"1px solid #7f1d1d33",borderRadius:10,padding:"11px 14px",color:"#f87171",fontSize:12,marginBottom:14,fontWeight:600}}>{err}</div>}
+            <Btn ch={tab==="login"?"Sign In to RefPay →":"Continue to Agreement →"} onClick={tab==="login"?login:attemptRegister}/>
+          </div>
+          {/* Plans preview */}
+          <div style={{background:"linear-gradient(135deg,#0a0800,#1a1200)",border:"1px solid #c9a84c22",borderRadius:18,padding:18,marginBottom:14}}>
+            <div style={{fontSize:14,fontWeight:900,background:"linear-gradient(135deg,#c9a84c,#f5d380)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:14,fontFamily:"'Cinzel',serif",letterSpacing:1}}>👑 Investment Plans</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {PLANS.map(p=>(
+                <div key={p.amount} style={{background:"#080712",border:`1px solid ${p.color}22`,borderRadius:12,padding:"13px 12px",borderLeft:`2px solid ${p.color}55`}}>
+                  <div style={{fontSize:16,marginBottom:3}}>{p.icon}</div>
+                  <div style={{fontWeight:800,fontSize:12,color:p.color}}>{p.label}</div>
+                  <div style={{fontSize:10,color:"#3a3020",marginTop:1,fontFamily:"'Orbitron',monospace"}}>PKR {p.amount.toLocaleString()}</div>
+                  <div style={{fontSize:14,fontWeight:900,color:"#f5d380",marginTop:6,fontFamily:"'Orbitron',monospace"}}>+{p.split.toLocaleString()}</div>
+                  <div style={{fontSize:8,color:"#3a3020",fontFamily:"'Orbitron',monospace"}}>per referral</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── DEPOSIT ──
+function Deposit({userId,onBack,onDone,toast}){
+  const user=DB.users[userId];
+  const[sel,setSel]=useState(1000);
+  const[txn,setTxn]=useState("");
+  const[method,setMethod]=useState("easypaisa");
+  const plan=getPlan(sel);
+  const s=DB.settings;
+  const payInfo={
+    easypaisa:{label:"EasyPaisa",icon:"💚",color:"#27ae60",num:s.adminEasypaisa,title:"RefPay"},
+    jazzcash:{label:"JazzCash",icon:"🔴",color:"#e91e8c",num:s.adminJazzcash,title:"RefPay"},
+    bank:{label:"Bank Transfer",icon:"🏦",color:"#2980b9",num:s.adminBank.account,title:s.adminBank.title,bank:s.adminBank.name},
+    binance:{label:"Binance",icon:"🟡",color:"#f0b90b",num:s.adminBinance.uid,title:s.adminBinance.name},
+  };
+  const submit=()=>{
+    if(!txn.trim()){toast("Transaction reference is required","error");return;}
+    DB.transactions.push({id:tid(),userId,userName:user.name,userPhone:user.phone,amount:plan.amount,planLabel:plan.label,planIcon:plan.icon,planColor:plan.color,method,txnId:txn.trim(),adminShare:plan.split,referrerShare:plan.split,referrerId:user.referrerId||null,referrerCode:user.referredBy||null,date:new Date().toLocaleDateString("en-GB"),timestamp:Date.now(),status:"pending"});
+    dbSave();toast("Deposit submitted! Admin verifies within 24 hours.","success");onDone();
+  };
+  const selPay=payInfo[method];
+  return(
+    <div style={{background:"var(--black)",minHeight:"100vh",position:"relative",overflow:"hidden"}}>
+      <Particles/>
+      <WithdrawTicker/>
+      <div style={{position:"relative",zIndex:1,padding:18,paddingBottom:48,animation:"fadeUp .3s ease"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
+          <button onClick={onBack} style={{background:"#0d0b1a",border:"1px solid #1e1a30",color:"#4a4230",borderRadius:10,padding:"9px 14px",cursor:"pointer",fontSize:17}}>←</button>
+          <div>
+            <div style={{fontSize:20,fontWeight:900,color:"#f5d380",fontFamily:"'Cinzel',serif"}}>Investment Plans</div>
+            <div style={{fontSize:11,color:"#4a4230"}}>50/50 split — you & your referrer earn equally</div>
+          </div>
+        </div>
+        {PLANS.map(p=>{
+          const isSel=sel===p.amount;
+          return(
+            <div key={p.amount} onClick={()=>{playCoin();setSel(p.amount);}} style={{background:isSel?`linear-gradient(135deg,${p.color}12,#0d0b1a)`:"#0d0b1a",border:`${isSel?2:1}px solid ${isSel?p.color:p.color+"18"}`,borderRadius:16,padding:"13px 15px",marginBottom:8,cursor:"pointer",transition:"all .2s"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div style={{display:"flex",alignItems:"center",gap:11}}>
+                  <div style={{width:44,height:44,borderRadius:12,background:isSel?p.color+"20":"#080712",border:`1.5px solid ${p.color}${isSel?"55":"18"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,transition:"all .2s"}}>{p.icon}</div>
+                  <div>
+                    <div style={{fontSize:14,fontWeight:900,color:isSel?p.color:"#4a4230"}}>{p.label}</div>
+                    <div style={{fontSize:10,color:"#3a3020"}}>{p.desc}</div>
+                    <div style={{fontSize:9,color:"#2a2010",fontFamily:"'Orbitron',monospace",marginTop:2}}>PKR {p.amount.toLocaleString()}</div>
+                  </div>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:16,fontWeight:900,color:p.color,fontFamily:"'Orbitron',monospace"}}>+{p.split.toLocaleString()}</div>
+                  <div style={{fontSize:8,color:"#3a3020",fontWeight:700,fontFamily:"'Orbitron',monospace"}}>PKR/REFERRAL</div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        <Card s={{marginBottom:12}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#4a4230",letterSpacing:2,textTransform:"uppercase",marginBottom:12,fontFamily:"'Orbitron',monospace"}}>Payment Method</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:14}}>
+            {Object.entries(payInfo).map(([id,m])=>(
+              <div key={id} onClick={()=>{playCoin();setMethod(id);}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"12px 8px",borderRadius:12,cursor:"pointer",border:`1.5px solid ${method===id?m.color:"#1e1a30"}`,background:method===id?m.color+"10":"transparent",transition:"all .2s",gap:4}}>
+                <span style={{fontSize:20}}>{m.icon}</span>
+                <span style={{fontWeight:800,fontSize:11,color:method===id?m.color:"#4a4230"}}>{m.label}</span>
+              </div>
+            ))}
+          </div>
+          {selPay&&(
+            <div style={{background:"#080712",border:"1px solid #c9a84c18",borderRadius:12,padding:14,marginBottom:12}}>
+              <div style={{fontSize:10,color:"#4a4230",letterSpacing:2,marginBottom:8,fontFamily:"'Orbitron',monospace"}}>SEND TO</div>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+                <span style={{fontSize:24}}>{selPay.icon}</span>
+                <div>
+                  <div style={{fontWeight:900,fontSize:14,color:selPay.color}}>{selPay.label}</div>
+                  {selPay.bank&&<div style={{fontSize:10,color:"#4a4230"}}>{selPay.bank}</div>}
+                </div>
+              </div>
+              <div style={{fontWeight:900,fontSize:16,color:"#f5d380",fontFamily:"'Orbitron',monospace",letterSpacing:1}}>{selPay.num}</div>
+              <div style={{fontSize:11,color:"#7a6830",marginTop:2}}>{selPay.title}</div>
+            </div>
+          )}
+        </Card>
+        <Inp label="Transaction Reference / ID" value={txn} onChange={setTxn} placeholder="e.g. EP9876543210" required/>
+        <Btn ch={`${plan.icon} Confirm PKR ${plan.amount.toLocaleString()} Deposit`} v="gold" onClick={submit} disabled={!txn.trim()}/>
+      </div>
+    </div>
+  );
+}
+
+// ── WITHDRAW ──
+function Withdraw({userId,onBack,toast,refresh}){
+  const user=DB.users[userId];
+  const[amt,setAmt]=useState("");const[method,setMethod]=useState("easypaisa");const[acc,setAcc]=useState("");const[name,setName]=useState("");
+  const n=parseInt(amt)||0;
+  const submit=()=>{
+    if(n<MIN_WITHDRAW){toast(`Min withdrawal: PKR ${MIN_WITHDRAW}`,"error");return;}
+    if(n>user.balance){toast("Insufficient balance","error");return;}
+    if(!acc||!name){toast("Account details required","error");return;}
+    DB.users[userId].balance-=n;
+    const w={id:tid(),userId,userName:user.name,amount:n,fee:0,youGet:n,method,accNumber:acc,accName:name,date:new Date().toLocaleDateString("en-GB"),status:"pending"};
+    DB.withdrawals.push(w);if(!DB.users[userId].withdrawals)DB.users[userId].withdrawals=[];DB.users[userId].withdrawals.push(w);
+    dbSave();toast(`Withdrawal of PKR ${n.toLocaleString()} submitted!`,"success");refresh();onBack();
+  };
+  const methods=[{id:"easypaisa",l:"EasyPaisa",icon:"💚",c:"#27ae60"},{id:"jazzcash",l:"JazzCash",icon:"🔴",c:"#e91e8c"},{id:"bank",l:"Bank Transfer",icon:"🏦",c:"#2980b9"},{id:"binance",l:"Binance",icon:"🟡",c:"#f0b90b"}];
+  return(
+    <div style={{background:"var(--black)",minHeight:"100vh",position:"relative",overflow:"hidden"}}>
+      <Particles/>
+      <div style={{position:"relative",zIndex:1,padding:18,paddingBottom:48,animation:"fadeUp .3s ease"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
+          <button onClick={onBack} style={{background:"#0d0b1a",border:"1px solid #1e1a30",color:"#4a4230",borderRadius:10,padding:"9px 14px",cursor:"pointer",fontSize:17}}>←</button>
+          <div style={{fontSize:20,fontWeight:900,color:"#f5d380",fontFamily:"'Cinzel',serif"}}>Withdraw Earnings</div>
+        </div>
+        <div style={{background:"linear-gradient(135deg,#0a0800,#1a1200)",border:"1px solid #c9a84c33",borderRadius:20,padding:"22px 18px",marginBottom:14,textAlign:"center",animation:"glow 4s ease-in-out infinite"}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#3a3020",letterSpacing:3,marginBottom:8,fontFamily:"'Orbitron',monospace"}}>Available Balance</div>
+          <div style={{fontSize:38,fontWeight:900,color:"#f5d380",letterSpacing:-1,lineHeight:1,fontFamily:"'Orbitron',monospace"}}>PKR {user.balance.toLocaleString()}</div>
+          <div style={{fontSize:11,color:"#4a4230",marginTop:4}}>≈ ${toUSD(user.balance)} USD</div>
+        </div>
+        <Card s={{marginBottom:12}}>
+          <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
+            {[500,1000,2000,5000].map(a=>(
+              <button key={a} onClick={()=>{playCoin();setAmt(String(a));}} style={{flex:1,minWidth:55,padding:"9px 0",borderRadius:9,background:amt===String(a)?"linear-gradient(135deg,#3d2c00,#c9a84c)":"#080712",color:amt===String(a)?"#0a0800":"#4a4230",border:`1px solid ${amt===String(a)?"#c9a84c55":"#1e1a30"}`,fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"'Orbitron',monospace",transition:"all .2s"}}>₨{a}</button>
+            ))}
+          </div>
+          <Inp value={amt} onChange={setAmt} type="number" placeholder="Or enter custom amount"/>
+        </Card>
+        <Card s={{marginBottom:12}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+            {methods.map(m=>(
+              <div key={m.id} onClick={()=>{playCoin();setMethod(m.id);}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"12px 8px",borderRadius:12,cursor:"pointer",border:`1.5px solid ${method===m.id?m.c:"#1e1a30"}`,background:method===m.id?m.c+"10":"transparent",transition:"all .2s",gap:4}}>
+                <span style={{fontSize:20}}>{m.icon}</span>
+                <span style={{fontWeight:800,fontSize:11,color:method===m.id?m.c:"#4a4230"}}>{m.l}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+        <Card s={{marginBottom:16}}>
+          <Inp label="Account Number / Wallet ID" value={acc} onChange={setAcc} placeholder="Account or Binance UID" required/>
+          <Inp label="Account Holder Name" value={name} onChange={setName} placeholder="Full name as registered" required/>
+        </Card>
+        <Btn ch={`Withdraw PKR ${n>=MIN_WITHDRAW?n.toLocaleString():"---"} →`} v="gold" onClick={submit} disabled={n<MIN_WITHDRAW||!acc||!name}/>
+      </div>
+    </div>
+  );
+}
+
+// ── TASKS ──
+function TasksScreen({userId,onBack,toast,refresh}){
+  const user=DB.users[userId];
+  const[activeTask,setActiveTask]=useState(null);const[sub,setSub]=useState("");
+  const mySubmissions=DB.taskSubmissions.filter(s=>s.userId===userId);
+  const activeTasks=DB.tasks.filter(t=>t.status==="active");
+  const submit=(taskId)=>{
+    if(!sub.trim()){toast("Provide your submission link or details","error");return;}
+    const task=DB.tasks.find(t=>t.id===taskId);if(!task)return;
+    if(DB.taskSubmissions.find(s=>s.userId===userId&&s.taskId===taskId)){toast("Already submitted","error");return;}
+    DB.taskSubmissions.push({id:tid(),userId,userName:user.name,userPhone:user.phone,taskId,taskTitle:task.title,taskCommission:task.commission,submission:sub.trim(),date:new Date().toLocaleDateString("en-GB"),timestamp:Date.now(),status:"pending"});
+    dbSave();toast("Task submitted! Review within 24 hours.","success");setSub("");setActiveTask(null);refresh();
+  };
+  return(
+    <div style={{background:"var(--black)",minHeight:"100vh",position:"relative",overflow:"hidden"}}>
+      <Particles/>
+      <div style={{position:"relative",zIndex:1,padding:18,paddingBottom:48,animation:"fadeUp .3s ease"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
+          <button onClick={onBack} style={{background:"#0d0b1a",border:"1px solid #1e1a30",color:"#4a4230",borderRadius:10,padding:"9px 14px",cursor:"pointer",fontSize:17}}>←</button>
+          <div><div style={{fontSize:20,fontWeight:900,color:"#f5d380",fontFamily:"'Cinzel',serif"}}>Task Center</div><div style={{fontSize:11,color:"#4a4230"}}>Complete tasks & earn commissions</div></div>
+        </div>
+        {activeTasks.length===0?(
+          <Card s={{textAlign:"center",padding:44}}>
+            <div style={{fontSize:44,marginBottom:14,animation:"float 2s ease-in-out infinite"}}>🎯</div>
+            <div style={{fontSize:17,color:"#4a4230",marginBottom:6,fontWeight:800,fontFamily:"'Cinzel',serif"}}>No Active Tasks</div>
+            <div style={{fontSize:12,color:"#2a2020"}}>New tasks will appear here. Check back soon!</div>
+          </Card>
+        ):(
+          activeTasks.map(task=>{
+            const mySub=mySubmissions.find(s=>s.taskId===task.id);const isActive=activeTask===task.id;
+            return(
+              <Card key={task.id} glow={isActive} color="#c9a84c" s={{marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                  <div style={{flex:1,marginRight:12}}>
+                    <div style={{fontSize:14,fontWeight:900,color:"#f5d380",marginBottom:4}}>{task.title}</div>
+                    <div style={{fontSize:11,color:"#4a4230",lineHeight:1.6}}>{task.description}</div>
+                  </div>
+                  <div style={{textAlign:"center",flexShrink:0}}>
+                    <div style={{fontSize:18,fontWeight:900,color:"#c9a84c",lineHeight:1,fontFamily:"'Orbitron',monospace"}}>{task.commission.toLocaleString()}</div>
+                    <div style={{fontSize:8,color:"#3a3020",fontWeight:700,fontFamily:"'Orbitron',monospace"}}>PKR</div>
+                  </div>
+                </div>
+                {mySub?(
+                  <div style={{background:mySub.status==="approved"?"#0a1f0d":mySub.status==="rejected"?"#150606":"#120e00",border:`1px solid ${mySub.status==="approved"?"#27ae6022":mySub.status==="rejected"?"#7f1d1d":"#c9a84c22"}`,borderRadius:11,padding:"10px 14px"}}>
+                    <div style={{fontSize:13,fontWeight:800,color:mySub.status==="approved"?"#27ae60":mySub.status==="rejected"?"#e74c3c":"#c9a84c"}}>
+                      {mySub.status==="approved"?"✦ Approved - Paid!":mySub.status==="rejected"?"✕ Rejected":"⏳ Under Review..."}
+                    </div>
+                  </div>
+                ):isActive?(
+                  <div style={{animation:"fadeIn .2s ease"}}>
+                    <Inp label="Submission Link or Details" value={sub} onChange={setSub} placeholder="YouTube / Google Drive link..." rows={3}/>
+                    <div style={{display:"flex",gap:7}}>
+                      <Btn ch="Submit ✦" v="gold" onClick={()=>submit(task.id)} disabled={!sub.trim()}/>
+                      <Btn ch="Cancel" v="dark" onClick={()=>setActiveTask(null)} s={{flex:"0 0 90px"}}/>
+                    </div>
+                  </div>
+                ):(
+                  <Btn ch="Accept Task →" v="ghost" onClick={()=>{playCoin();setActiveTask(task.id);}}/>
+                )}
+              </Card>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── USER DASHBOARD ──
+function UserDash({userId,onLogout,onDeposit,onWithdraw,onTasks,onAds,toast}){
+  const user=DB.users[userId];
+  if(!user)return null;
+  const refs=Object.values(DB.users).filter(u=>u.referrerId===userId);
+  const activeRefs=refs.filter(u=>u.depositDone);
+  const pendingDep=DB.transactions.find(t=>t.userId===userId&&t.status==="pending");
+  const approvedDep=DB.transactions.find(t=>t.userId===userId&&t.status==="approved");
+  const myPlan=approvedDep?getPlan(approvedDep.amount):null;
+  const activeTasks=DB.tasks.filter(t=>t.status==="active").length;
+  const todayAds=DB.adViews.filter(v=>v.userId===userId&&v.date===new Date().toLocaleDateString("en-GB")).length;
+
+  const copyCode=()=>{
+    navigator.clipboard?.writeText(user.referralCode).catch(()=>{});
+    playCoin();toast("Referral code copied!","success");
+  };
+
+  return(
+    <div style={{background:"var(--black)",minHeight:"100vh",position:"relative",overflow:"hidden"}}>
+      <Particles/>
+      <WithdrawTicker/>
+      <div style={{position:"relative",zIndex:1,padding:"16px 16px 48px",animation:"fadeUp .35s ease"}}>
+        {/* HEADER */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <Logo/>
+          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            <div style={{background:"#0d0b1a",border:"1px solid #c9a84c18",borderRadius:9,padding:"5px 10px",fontSize:11,color:"#7a6830",fontWeight:600}}>{user.name.split(" ")[0]}</div>
+            <button onClick={()=>{playCoin();onLogout();}} style={{background:"#0d0b1a",border:"1px solid #1e1a30",color:"#4a4230",borderRadius:9,padding:"5px 10px",cursor:"pointer",fontSize:11,fontWeight:600}}>Sign Out</button>
+          </div>
+        </div>
+        <StatsBar/>
+
+        {/* NOT ACTIVATED BANNER */}
+        {!user.depositDone&&(
+          <div style={{background:"linear-gradient(135deg,#150606,#0d0b1a)",border:"1px solid #c0392b22",borderRadius:16,padding:16,marginBottom:14}}>
+            <div style={{fontSize:15,fontWeight:900,color:"#e74c3c",marginBottom:6,fontFamily:"'Cinzel',serif"}}>⚡ Account Not Activated</div>
+            {pendingDep
+              ?<div style={{fontSize:12,color:"#4a4230"}}>Deposit under review. Admin will verify within 24 hours.</div>
+              :<><div style={{fontSize:12,color:"#4a4230",marginBottom:12}}>Select an investment plan to activate your account and unlock referral code.</div><Btn ch="View Investment Plans →" v="gold" onClick={onDeposit} s={{padding:"12px 0"}}/></>
+            }
+          </div>
+        )}
+
+        {/* BALANCE CARD */}
+        <div style={{background:"linear-gradient(135deg,#0a0800,#1a1200,#0a0800)",border:"1px solid #c9a84c33",borderRadius:22,padding:"22px 18px",marginBottom:14,position:"relative",overflow:"hidden",animation:"glow 4s ease-in-out infinite"}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:"1px",background:"linear-gradient(90deg,transparent,#c9a84c44,transparent)"}}/>
+          {myPlan&&<div style={{display:"inline-flex",alignItems:"center",gap:6,background:myPlan.color+"15",border:`1px solid ${myPlan.color}30`,borderRadius:20,padding:"4px 12px",marginBottom:14,fontSize:10,fontWeight:800,color:myPlan.color}}>{myPlan.icon} {myPlan.label.toUpperCase()} MEMBER</div>}
+          <div style={{fontSize:9,fontWeight:700,color:"#4a4230",letterSpacing:3,marginBottom:6,fontFamily:"'Orbitron',monospace"}}>Total Balance</div>
+          <div style={{fontSize:38,fontWeight:900,color:"#f5d380",letterSpacing:-1,lineHeight:1,fontFamily:"'Orbitron',monospace"}}>PKR {user.balance.toLocaleString()}</div>
+          <div style={{fontSize:11,color:"#4a4230",marginTop:4}}>≈ ${toUSD(user.balance)} USD</div>
+          <div style={{display:"flex",gap:20,marginTop:14}}>
+            {[{l:"Referrals",v:activeRefs.length,c:"#c9a84c"},{l:"Total Earned",v:`₨${user.totalEarned.toLocaleString()}`,c:"#f5d380"},{l:"Status",v:user.depositDone?"Active":"Inactive",c:user.depositDone?"#27ae60":"#e74c3c"}].map(ss=>(
+              <div key={ss.l}>
+                <div style={{fontSize:14,fontWeight:900,color:ss.c,fontFamily:"'Orbitron',monospace"}}>{ss.v}</div>
+                <div style={{fontSize:8,color:"#3a3020",marginTop:2,letterSpacing:1,fontWeight:700,fontFamily:"'Orbitron',monospace"}}>{ss.l.toUpperCase()}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:7,marginTop:16}}>
+            <button onClick={()=>{playCoin();onDeposit();}} style={{flex:1,background:"#0d0b1a",border:"1px solid #c9a84c25",borderRadius:11,padding:"11px 0",fontWeight:800,fontSize:11,color:"#c9a84c",cursor:"pointer",letterSpacing:1,fontFamily:"'Rajdhani',sans-serif"}}>+ DEPOSIT</button>
+            <button onClick={()=>{if(user.depositDone&&user.balance>=MIN_WITHDRAW){playCoin();onWithdraw();}}} disabled={!user.depositDone||user.balance<MIN_WITHDRAW} style={{flex:1,background:user.depositDone&&user.balance>=MIN_WITHDRAW?"linear-gradient(135deg,#3d2c00,#c9a84c,#8b6914)":"#0d0b1a",border:"none",borderRadius:11,padding:"11px 0",fontWeight:800,fontSize:11,color:user.depositDone&&user.balance>=MIN_WITHDRAW?"#0a0800":"#1a1800",cursor:user.depositDone&&user.balance>=MIN_WITHDRAW?"pointer":"not-allowed",letterSpacing:1,fontFamily:"'Rajdhani',sans-serif"}}>WITHDRAW</button>
+          </div>
+        </div>
+
+        {/* QUICK ACTIONS */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+          <div onClick={()=>{playCoin();onTasks();}} className="card-hover" style={{background:"linear-gradient(135deg,#0a0800,#1a1200)",border:"1px solid #c9a84c22",borderRadius:16,padding:16,cursor:"pointer"}}>
+            <div style={{fontSize:28,marginBottom:8,animation:"float 2.5s ease-in-out infinite"}}>🎯</div>
+            <div style={{fontSize:13,fontWeight:900,color:"#c9a84c",fontFamily:"'Rajdhani',sans-serif"}}>Tasks</div>
+            <div style={{fontSize:10,color:"#3a3020",marginTop:2}}>{activeTasks>0?`${activeTasks} available`:"Check back soon"}</div>
+          </div>
+          <div onClick={()=>{playCoin();onAds();}} className="card-hover" style={{background:"linear-gradient(135deg,#0a0f1a,#001a1a)",border:"1px solid #27ae6022",borderRadius:16,padding:16,cursor:"pointer"}}>
+            <div style={{fontSize:28,marginBottom:8,animation:"float 3s ease-in-out infinite"}}>📺</div>
+            <div style={{fontSize:13,fontWeight:900,color:"#27ae60",fontFamily:"'Rajdhani',sans-serif"}}>Watch Ads</div>
+            <div style={{fontSize:10,color:"#1a3020",marginTop:2}}>{todayAds}/10 today</div>
+          </div>
+        </div>
+
+        {/* REFERRAL CODE */}
+        {user.depositDone?(
+          <Card glow s={{marginBottom:14}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#4a4230",letterSpacing:2,marginBottom:12,fontFamily:"'Orbitron',monospace"}}>🔗 Your Referral Code</div>
+            <div style={{display:"flex",gap:9,alignItems:"center",marginBottom:8}}>
+              <div style={{flex:1,background:"#080712",borderRadius:12,padding:"14px 0",textAlign:"center",border:"1.5px dashed #c9a84c25",fontSize:22,fontWeight:900,letterSpacing:7,color:"#f5d380",fontFamily:"'Orbitron',monospace"}}>{user.referralCode}</div>
+              <button onClick={copyCode} style={{background:"linear-gradient(135deg,#3d2c00,#c9a84c)",color:"#0a0800",border:"none",borderRadius:12,padding:"14px 16px",fontWeight:800,cursor:"pointer",fontSize:12}}>Copy</button>
+            </div>
+            <div style={{fontSize:11,color:"#3a3020",textAlign:"center",lineHeight:1.5}}>
+              Share this code — earn <span style={{color:"#c9a84c",fontWeight:700}}>PKR {approvedDep?.referrerShare||"---"}</span> per referral activation
+            </div>
+            {/* Mini referral stats */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7,marginTop:12}}>
+              {[{l:"Total Refs",v:refs.length,c:"#c9a84c"},{l:"Active",v:activeRefs.length,c:"#27ae60"},{l:"Pending",v:refs.length-activeRefs.length,c:"#f39c12"}].map(ss=>(
+                <div key={ss.l} style={{background:"#080712",border:`1px solid ${ss.c}18`,borderRadius:10,padding:"10px 8px",textAlign:"center"}}>
+                  <div style={{fontSize:18,fontWeight:900,color:ss.c,fontFamily:"'Orbitron',monospace"}}>{ss.v}</div>
+                  <div style={{fontSize:8,color:"#3a3020",marginTop:2,letterSpacing:.5,fontFamily:"'Orbitron',monospace"}}>{ss.l.toUpperCase()}</div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        ):(
+          <div style={{background:"#0d0b1a",border:"1px solid #1e1a30",borderRadius:16,padding:16,marginBottom:14,opacity:.5}}>
+            <div style={{fontSize:12,color:"#e74c3c",fontWeight:700}}>🔒 Referral code unlocks after deposit approval</div>
+          </div>
+        )}
+
+        {/* HOW IT WORKS */}
+        <HowItWorks/>
+
+        {/* ANNOUNCEMENTS */}
+        <div style={{background:"linear-gradient(135deg,#0a0800,#1a1200)",border:"1px solid #c9a84c18",borderRadius:16,padding:14}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#4a4230",letterSpacing:2,marginBottom:12,fontFamily:"'Orbitron',monospace"}}>📢 ANNOUNCEMENTS</div>
+          {DB.announcements.filter(a=>a.id!=="ann0").map(a=>(
+            <div key={a.id} style={{marginBottom:10,padding:"12px 14px",background:"#080712",borderRadius:14,border:`1px solid ${a.color}22`}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                <div style={{width:30,height:30,borderRadius:9,background:a.color+"18",border:`1px solid ${a.color}33`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>{a.title.slice(0,2)}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:12,fontWeight:900,color:a.color,lineHeight:1.2}}>{a.title}</div>
+                  <div style={{fontSize:9,color:"#3a3020",fontFamily:"'Orbitron',monospace",marginTop:1}}>{a.date}</div>
+                </div>
+              </div>
+              <div style={{fontSize:11,color:"#3a3020",lineHeight:1.6,paddingLeft:38}}>{a.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── ADMIN ──
+function AdminPanel({onLogout,toast}){
+  const[tab,setTab]=useState("deposits");
+  const[tick,setTick]=useState(0);
+  const refresh=()=>setTick(t=>t+1);
+  const s=DB.settings;
+  const[ep,setEp]=useState(s.adminEasypaisa);const[jc,setJc]=useState(s.adminJazzcash);
+  const[bankNum,setBankNum]=useState(s.adminBank.account);const[bankName,setBankName]=useState(s.adminBank.name);const[bankTitle,setBankTitle]=useState(s.adminBank.title);
+  const[binUid,setBinUid]=useState(s.adminBinance.uid);const[binName,setBinName]=useState(s.adminBinance.name);
+  const[adsEnabled,setAdsEnabled]=useState(s.adsEnabled);const[adsPerSession,setAdsPerSession]=useState(String(s.adsPerSession));
+  const[nt,setNt]=useState({title:"",desc:"",commission:"",deadline:""});const snt=k=>v=>setNt(p=>({...p,[k]:v}));
+
+  const pDeps=DB.transactions.filter(t=>t.status==="pending");
+  const pW=DB.withdrawals.filter(w=>w.status==="pending");
+  const pSubs=DB.taskSubmissions.filter(s=>s.status==="pending");
+  const users=Object.values(DB.users).filter(u=>u.role!=="admin");
+  const aDeps=DB.transactions.filter(t=>t.status==="approved");
+  const totalAdmin=aDeps.reduce((ss,t)=>ss+t.adminShare,0);
+  const totalRef=aDeps.reduce((ss,t)=>ss+t.referrerShare,0);
+
+  const saveSettings=()=>{DB.settings.adminEasypaisa=ep;DB.settings.adminJazzcash=jc;DB.settings.adminBank={name:bankName,account:bankNum,title:bankTitle};DB.settings.adminBinance={uid:binUid,name:binName};DB.settings.adsEnabled=adsEnabled;DB.settings.adsPerSession=parseInt(adsPerSession)||10;dbSave();toast("Settings saved!","success");refresh();};
+  const appD=id=>{const t=DB.transactions.find(x=>x.id===id);if(!t)return;t.status="approved";if(DB.users[t.userId]){DB.users[t.userId].depositDone=true;DB.users[t.userId].canRefer=true;}if(t.referrerId&&DB.users[t.referrerId]){DB.users[t.referrerId].balance+=t.referrerShare;DB.users[t.referrerId].totalEarned+=t.referrerShare;}DB.users.ADMIN.balance+=t.adminShare;DB.users.ADMIN.totalEarned+=t.adminShare;dbSave();playCoin();toast(`Approved! Earned PKR ${t.adminShare.toLocaleString()}`,"success");refresh();};
+  const rejD=id=>{const t=DB.transactions.find(x=>x.id===id);if(t)t.status="rejected";dbSave();toast("Deposit rejected","error");refresh();};
+  const appW=id=>{const w=DB.withdrawals.find(x=>x.id===id);if(!w)return;w.status="approved";dbSave();playCoin();toast(`Send PKR ${w.youGet.toLocaleString()} to ${w.accNumber}`,"success");refresh();};
+  const rejW=id=>{const w=DB.withdrawals.find(x=>x.id===id);if(!w)return;w.status="rejected";if(DB.users[w.userId])DB.users[w.userId].balance+=w.amount;dbSave();toast("Rejected - balance refunded","info");refresh();};
+  const appS=id=>{const ss=DB.taskSubmissions.find(x=>x.id===id);if(!ss)return;ss.status="approved";if(DB.users[ss.userId]){DB.users[ss.userId].balance+=ss.taskCommission;DB.users[ss.userId].totalEarned+=ss.taskCommission;}dbSave();playCoin();toast(`Task approved! PKR ${ss.taskCommission.toLocaleString()} paid`,"success");refresh();};
+  const rejS=id=>{const ss=DB.taskSubmissions.find(x=>x.id===id);if(ss)ss.status="rejected";dbSave();toast("Task rejected","error");refresh();};
+  const addTask=()=>{if(!nt.title||!nt.commission){toast("Title and commission required","error");return;}DB.tasks.push({id:tid(),title:nt.title,description:nt.desc,commission:parseInt(nt.commission)||0,deadline:nt.deadline||"Open",status:"active",date:new Date().toLocaleDateString("en-GB")});setNt({title:"",desc:"",commission:"",deadline:""});dbSave();playCoin();toast("Task posted!","success");refresh();};
+  const deleteTask=id=>{const idx=DB.tasks.findIndex(t=>t.id===id);if(idx>-1)DB.tasks.splice(idx,1);dbSave();toast("Task deleted","info");refresh();};
+
+  const tabs=[["deposits",`Deposits (${pDeps.length})`,`#c9a84c`],["withdrawals",`Withdrawals (${pW.length})`,"#7dd3fc"],["tasks",`Tasks (${pSubs.length})`,"#a78bfa"],["newtask","+ New Task","#27ae60"],["members",`Members (${users.length})`,"#94a3b8"],["settings","⚙️ Settings","#f0b90b"]];
+
+  return(
+    <div style={{background:"var(--black)",minHeight:"100vh",position:"relative",overflow:"hidden"}}>
+      <Particles/>
+      <div style={{position:"relative",zIndex:1,padding:"16px 16px 48px",animation:"fadeUp .35s ease"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div><Logo/><div style={{display:"inline-flex",alignItems:"center",gap:5,marginTop:6,background:"#0a0800",border:"1px solid #c9a84c22",borderRadius:20,padding:"3px 11px"}}><span style={{fontSize:9,fontWeight:800,color:"#c9a84c",letterSpacing:2,fontFamily:"'Orbitron',monospace"}}>🔐 ADMIN DASHBOARD</span></div></div>
+          <button onClick={()=>{playCoin();onLogout();}} style={{background:"#0d0b1a",border:"1px solid #1e1a30",color:"#4a4230",borderRadius:9,padding:"7px 13px",cursor:"pointer",fontSize:11,fontWeight:700}}>Sign Out</button>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+          {[{l:"Platform Revenue",v:`₨${totalAdmin.toLocaleString()}`,c:"#c9a84c",i:"💰"},{l:"Paid to Members",v:`₨${totalRef.toLocaleString()}`,c:"#27ae60",i:"💸"},{l:"Registered",v:users.length,c:"#a78bfa",i:"👥"},{l:"Active Members",v:users.filter(u=>u.depositDone).length,c:"#7dd3fc",i:"✦"},{l:"Pending Actions",v:pDeps.length+pW.length+pSubs.length,c:pDeps.length+pW.length+pSubs.length>0?"#e74c3c":"#3a3020",i:"⏳"},{l:"Admin Code",v:"REFPAY2025",c:"#f5d380",i:"🔗"}].map(ss=>(
+            <div key={ss.l} style={{background:"#0d0b1a",border:"1px solid #1e1a30",borderRadius:13,padding:12,borderTop:`2px solid ${ss.c}33`}}>
+              <div style={{fontSize:9,color:"#3a3020",letterSpacing:.5,textTransform:"uppercase",marginBottom:4,fontWeight:700,fontFamily:"'Orbitron',monospace"}}>{ss.i} {ss.l}</div>
+              <div style={{fontSize:16,fontWeight:900,color:ss.c,fontFamily:"'Orbitron',monospace"}}>{ss.v}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:3,WebkitOverflowScrolling:"touch"}}>
+          {tabs.map(([id,l,c])=>(
+            <button key={id} onClick={()=>{playCoin();setTab(id);}} style={{padding:"7px 12px",borderRadius:20,whiteSpace:"nowrap",flexShrink:0,background:tab===id?c+"18":"#0d0b1a",color:tab===id?c:"#3a3020",border:`1px solid ${tab===id?c+"44":"#1e1a30"}`,fontWeight:700,fontSize:10,cursor:"pointer",transition:"all .2s",fontFamily:"'Rajdhani',sans-serif"}}>{l}</button>
+          ))}
+        </div>
+        {tab==="deposits"&&<div>{pDeps.length===0?<div style={{textAlign:"center",color:"#3a3020",padding:40,fontSize:12,fontFamily:"'Orbitron',monospace"}}>NO PENDING DEPOSITS ✦</div>:pDeps.map(t=>{const p=getPlan(t.amount);return(<Card key={t.id} glow color={p.color} s={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:9}}><div><div style={{fontWeight:800,color:"#f5d380",fontSize:13}}>{t.userName}</div><div style={{fontSize:9,color:"#3a3020",fontFamily:"'Orbitron',monospace"}}>{t.userPhone} · {t.date}</div></div><Badge l="Pending" c="#c9a84c"/></div><div style={{background:"#080712",borderRadius:10,padding:10,marginBottom:9}}><div style={{fontSize:20,fontWeight:900,color:p.color,fontFamily:"'Orbitron',monospace",marginBottom:4}}>{p.icon} PKR {t.amount.toLocaleString()}</div><div style={{fontSize:10,color:"#3a3020"}}>{t.method.toUpperCase()} · TXN: {t.txnId}</div></div><div style={{display:"flex",gap:7}}><Btn ch="✦ Approve" v="gold" onClick={()=>appD(t.id)} s={{padding:"10px 0",fontSize:12}}/><Btn ch="✕ Reject" v="red" onClick={()=>rejD(t.id)} s={{padding:"10px 0",fontSize:12}}/></div></Card>);})}</div>}
+        {tab==="withdrawals"&&<div>{pW.length===0?<div style={{textAlign:"center",color:"#3a3020",padding:40,fontSize:12,fontFamily:"'Orbitron',monospace"}}>NO PENDING WITHDRAWALS</div>:pW.map(w=>(<Card key={w.id} glow color="#7dd3fc" s={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:9}}><div><div style={{fontWeight:800,color:"#f5d380",fontSize:13}}>{w.userName}</div><div style={{fontSize:9,color:"#3a3020",fontFamily:"'Orbitron',monospace"}}>{w.date}</div></div><Badge l="Pending" c="#c9a84c"/></div><div style={{background:"#080712",borderRadius:11,padding:12,marginBottom:9}}><div style={{fontSize:24,fontWeight:900,color:"#f5d380",marginBottom:6,fontFamily:"'Orbitron',monospace"}}>PKR {w.youGet.toLocaleString()}</div><div style={{fontSize:12,color:"#4a4230"}}>{w.method.toUpperCase()}: <b style={{color:"#e8dfc0"}}>{w.accNumber}</b></div><div style={{fontSize:11,color:"#3a3020",marginTop:2}}>{w.accName}</div></div><div style={{display:"flex",gap:7}}><Btn ch="✦ Mark Sent" v="gold" onClick={()=>appW(w.id)} s={{padding:"10px 0",fontSize:12}}/><Btn ch="✕ Reject" v="red" onClick={()=>rejW(w.id)} s={{padding:"10px 0",fontSize:12}}/></div></Card>))}</div>}
+        {tab==="tasks"&&<div>{pSubs.length===0?<div style={{textAlign:"center",color:"#3a3020",padding:36,fontSize:12,fontFamily:"'Orbitron',monospace"}}>NO PENDING SUBMISSIONS</div>:pSubs.map(ss=>(<Card key={ss.id} glow color="#a78bfa" s={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:9}}><div><div style={{fontWeight:800,color:"#f5d380",fontSize:13}}>{ss.userName}</div><div style={{fontSize:9,color:"#3a3020",fontFamily:"'Orbitron',monospace"}}>{ss.date}</div></div><Badge l="Review" c="#c9a84c"/></div><div style={{background:"#080712",borderRadius:11,padding:11,marginBottom:9}}><div style={{fontSize:11,fontWeight:800,color:"#a78bfa",marginBottom:4}}>🎯 {ss.taskTitle}</div><div style={{fontSize:11,color:"#4a4230",wordBreak:"break-all"}}>{ss.submission}</div><div style={{fontSize:18,fontWeight:900,color:"#c9a84c",marginTop:7,fontFamily:"'Orbitron',monospace"}}>PKR {ss.taskCommission.toLocaleString()}</div></div><div style={{display:"flex",gap:7}}><Btn ch="✦ Approve" v="gold" onClick={()=>appS(ss.id)} s={{padding:"10px 0",fontSize:12}}/><Btn ch="✕ Reject" v="red" onClick={()=>rejS(ss.id)} s={{padding:"10px 0",fontSize:12}}/></div></Card>))}</div>}
+        {tab==="newtask"&&(<Card glow color="#27ae60"><div style={{fontSize:16,fontWeight:900,color:"#f5d380",marginBottom:16,fontFamily:"'Cinzel',serif"}}>Post New Task</div><Inp label="Task Title" value={nt.title} onChange={snt("title")} placeholder="e.g. Create a Travel Vlog Video" required/><Inp label="Description" value={nt.desc} onChange={snt("desc")} placeholder="Detailed task requirements..." rows={3}/><Inp label="Commission (PKR)" value={nt.commission} onChange={snt("commission")} placeholder="e.g. 500" type="number" required/><Inp label="Deadline" value={nt.deadline} onChange={snt("deadline")} placeholder="e.g. 3 days / Open"/><Btn ch="🎯 Post Task" v="gold" onClick={addTask} disabled={!nt.title||!nt.commission}/>{DB.tasks.length>0&&<div style={{marginTop:20}}><div style={{fontSize:10,fontWeight:700,color:"#4a4230",letterSpacing:2,marginBottom:10,fontFamily:"'Orbitron',monospace"}}>ACTIVE TASKS</div>{DB.tasks.filter(t=>t.status==="active").map(task=>(<div key={task.id} style={{background:"#080712",border:"1px solid #1e1a30",borderRadius:12,padding:12,marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontWeight:800,color:"#c9a84c",fontSize:12}}>{task.title}</div><div style={{fontSize:10,color:"#3a3020",fontFamily:"'Orbitron',monospace"}}>PKR {task.commission.toLocaleString()}</div></div><button onClick={()=>{playCoin();deleteTask(task.id);}} style={{background:"#2a0a0a",border:"1px solid #7f1d1d33",color:"#e74c3c",borderRadius:8,padding:"6px 10px",cursor:"pointer",fontSize:10,fontWeight:700}}>Delete</button></div>))}</div>}</Card>)}
+        {tab==="members"&&<div>{users.length===0?<div style={{textAlign:"center",color:"#3a3020",padding:36,fontSize:12,fontFamily:"'Orbitron',monospace"}}>NO MEMBERS YET</div>:users.map(u=>{const dep=DB.transactions.find(t=>t.userId===u.id&&t.status==="approved");const p=dep?getPlan(dep.amount):null;return(<div key={u.id} style={{background:"#0d0b1a",border:"1px solid #1e1a30",borderRadius:14,padding:13,marginBottom:8}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><div style={{fontWeight:800,color:"#f5d380",fontSize:13}}>{u.name}</div><Badge l={u.depositDone?"Active":"Inactive"} c={u.depositDone?"#27ae60":"#e74c3c"}/></div><div style={{fontSize:10,color:"#3a3020",marginBottom:7,fontFamily:"'Orbitron',monospace"}}>{u.phone} · {u.joinDate}</div><div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{p&&<Badge l={`${p.icon} ${p.label}`} c={p.color}/>}<Badge l={`Code: ${u.referralCode}`} c="#c9a84c"/><Badge l={`₨${u.balance.toLocaleString()}`} c={u.balance>0?"#c9a84c":"#3a3020"}/></div></div>);})}</div>}
+        {tab==="settings"&&(<div><Card glow color="#f0b90b" s={{marginBottom:12}}><div style={{fontSize:15,fontWeight:900,color:"#f5d380",marginBottom:16,fontFamily:"'Cinzel',serif"}}>⚙️ Payment Settings</div><div style={{marginBottom:14,padding:14,background:"#080712",borderRadius:12,border:"1px solid #27ae6022"}}><div style={{fontSize:10,fontWeight:700,color:"#27ae60",letterSpacing:2,marginBottom:10,fontFamily:"'Orbitron',monospace"}}>💚 EASYPAISA</div><Inp label="EasyPaisa Number" value={ep} onChange={setEp} placeholder="03XXXXXXXXX" type="tel"/></div><div style={{marginBottom:14,padding:14,background:"#080712",borderRadius:12,border:"1px solid #e91e8c22"}}><div style={{fontSize:10,fontWeight:700,color:"#e91e8c",letterSpacing:2,marginBottom:10,fontFamily:"'Orbitron',monospace"}}>🔴 JAZZCASH</div><Inp label="JazzCash Number" value={jc} onChange={setJc} placeholder="03XXXXXXXXX" type="tel"/></div><div style={{marginBottom:14,padding:14,background:"#080712",borderRadius:12,border:"1px solid #2980b922"}}><div style={{fontSize:10,fontWeight:700,color:"#2980b9",letterSpacing:2,marginBottom:10,fontFamily:"'Orbitron',monospace"}}>🏦 BANK</div><Inp label="Bank Name" value={bankName} onChange={setBankName} placeholder="e.g. Meezan Bank"/><Inp label="Account Number" value={bankNum} onChange={setBankNum} placeholder="XXXXXXXXXXXXXXXX"/><Inp label="Account Title" value={bankTitle} onChange={setBankTitle} placeholder="e.g. RefPay Admin"/></div><div style={{marginBottom:14,padding:14,background:"#080712",borderRadius:12,border:"1px solid #f0b90b22"}}><div style={{fontSize:10,fontWeight:700,color:"#f0b90b",letterSpacing:2,marginBottom:10,fontFamily:"'Orbitron',monospace"}}>🟡 BINANCE</div><Inp label="Binance UID" value={binUid} onChange={setBinUid} placeholder="Your Binance UID"/><Inp label="Account Name" value={binName} onChange={setBinName} placeholder="Name on Binance"/></div><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",background:"#080712",borderRadius:12,marginBottom:14,border:"1px solid #1e1a30"}}><div><div style={{fontWeight:800,color:"#f5d380",fontSize:13}}>Ads Enabled</div><div style={{fontSize:10,color:"#3a3020"}}>Allow users to watch ads</div></div><div onClick={()=>{playCoin();setAdsEnabled(a=>!a);}} style={{width:44,height:24,borderRadius:12,background:adsEnabled?"linear-gradient(135deg,#27ae60,#2ecc71)":"#1e1a30",cursor:"pointer",position:"relative",transition:"all .3s"}}><div style={{position:"absolute",top:3,left:adsEnabled?22:3,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"all .3s"}}/></div></div><Inp label="Ads Per Session (daily per user)" value={adsPerSession} onChange={setAdsPerSession} type="number" placeholder="10"/><Btn ch="💾 Save All Settings" v="gold" onClick={saveSettings}/></Card></div>)}
+      </div>
+    </div>
+  );
+}
+
+// ── APP ──
+function App(){
+  const[screen,setScreen]=useState("splash");
+  const[userId,setUserId]=useState(null);
+  const[toastData,setToastData]=useState(null);
+  const[tick,setTick]=useState(0);
+  const showToast=(msg,type="info")=>setToastData({msg,type});
+  const refresh=()=>setTick(t=>t+1);
+
+  useEffect(()=>{window.__hideLoading&&window.__hideLoading();},[]);
+
+  const handleLogin=id=>{
+    setUserId(id);const u=DB.users[id];
+    setScreen(u.role==="admin"?"admin":!u.depositDone?"pending":"dashboard");
+  };
+  const handleLogout=()=>{setUserId(null);setScreen("auth");};
+  const user=userId?DB.users[userId]:null;
+
+  return(
+    <div style={{background:"var(--black)",minHeight:"100vh"}}>
+      <div style={{maxWidth:440,margin:"0 auto",minHeight:"100vh",position:"relative"}}>
+        {toastData&&<Toast msg={toastData.msg} type={toastData.type} onClose={()=>setToastData(null)}/>}
+        {screen==="splash"&&<Splash onDone={()=>setScreen("auth")}/>}
+        {screen==="auth"&&<Auth onLogin={handleLogin} toast={showToast}/>}
+        {(screen==="dashboard"||screen==="pending")&&user&&(
+          <UserDash key={tick} userId={userId} onLogout={handleLogout}
+            onDeposit={()=>setScreen("deposit")}
+            onWithdraw={()=>setScreen("withdraw")}
+            onTasks={()=>setScreen("tasks")}
+            onAds={()=>setScreen("ads")}
+            toast={showToast}/>
+        )}
+        {screen==="deposit"&&user&&(
+          <Deposit userId={userId}
+            onBack={()=>setScreen(user.depositDone?"dashboard":"pending")}
+            onDone={()=>{refresh();setScreen("pending");}}
+            toast={showToast}/>
+        )}
+        {screen==="withdraw"&&user&&(
+          <Withdraw userId={userId}
+            onBack={()=>setScreen("dashboard")}
+            toast={showToast} refresh={refresh}/>
+        )}
+        {screen==="tasks"&&user&&(
+          <TasksScreen userId={userId}
+            onBack={()=>setScreen("dashboard")}
+            toast={showToast} refresh={refresh}/>
+        )}
+        {screen==="ads"&&user&&(
+          <AdsScreen userId={userId}
+            onBack={()=>setScreen("dashboard")}
+            toast={showToast} refresh={refresh}/>
+        )}
+        {screen==="admin"&&<AdminPanel onLogout={handleLogout} toast={showToast}/>}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
